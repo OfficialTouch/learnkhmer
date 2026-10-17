@@ -1,21 +1,34 @@
 # Learn Khmer
 
-A free, static web app for learning spoken Khmer (Cambodian) for everyday family conversation.
+A free web app for learning spoken Khmer (Cambodian) for everyday family conversation.
 
-- Homepage, 15 daily lessons in Beginner / Intermediate / Advanced levels
-- Khmer alphabet: 33 consonants and common vowels with audio
-- Matching games and culture notes
-- Romanization + English + Khmer script
-- Native-style audio (female and male voices)
-- Spaced-repetition review, listen-and-repeat recording, listening quiz
-- Progress saved in your browser
+- **Course**: 10 school-style units (lesson, vocabulary, examples, new letters, practice, unit test)
+- **AI tutor**: chat with a Khmer teacher that speaks out loud in the Sreymom voice (needs the tutor server below)
+- **Phrasebook**: 15 daily phrase lessons, Beginner to Advanced, with record-and-compare
+- **Verbs**: any verb, any person, every tense, with audio
+- **Alphabet**: 33 consonants and common vowels with audio
+- **Practice**: spaced-repetition review, listening quiz, matching games
+- **Tools**: translator, on-screen Khmer keyboard, printable handwriting sheets
+- **Culture notes**
 
-## Put it online (GitHub Pages)
+Live at https://officialtouch.github.io/learnkhmer/
 
-1. Create a new public repo on GitHub and upload all these files (keep the `.github` folder).
-2. The **Generate audio** action runs automatically and commits the MP3s to `audio/`. Check the **Actions** tab; if it didn't run, open it and click **Run workflow**.
-3. **Settings → Pages →** Source: *Deploy from a branch*, branch `main`, folder `/ (root)`.
-4. Your app is live at `https://<your-username>.github.io/<repo-name>/`.
+## Files
+
+- `index.html`: page layout and styles
+- `app.js`: all the app logic
+- `data.js`: all content (lessons, units, alphabet, verbs, culture). Edit here.
+- `gen_audio.py`: makes the MP3s in `audio/`. The **Generate audio** GitHub Action runs it automatically when `data.js` changes.
+- `worker/worker.js`: the AI tutor server (Cloudflare Worker)
+
+## Set up the AI tutor
+
+You need three free accounts. The Claude API costs a few cents per conversation; the rest is free.
+
+1. **Claude API key**: at console.anthropic.com, add a small credit under Billing, then create a key under API Keys.
+2. **Microsoft Speech key** (the Sreymom voice): in portal.azure.com create a **Speech** resource with the **Free F0** tier. Copy **Key 1** and the **Location/Region** (e.g. `eastus`) from "Keys and Endpoint".
+3. **Cloudflare Worker**: at dash.cloudflare.com go to Workers & Pages → Create → Worker. Name it `khmer-tutor`, deploy, click **Edit code**, paste in `worker/worker.js`, and deploy again. Then under **Settings → Variables and Secrets** add four **Secrets**: `ANTHROPIC_API_KEY`, `AZURE_SPEECH_KEY`, `AZURE_SPEECH_REGION`, `PASSWORD`.
+4. On the site, open **AI Tutor** and paste your worker address (`https://khmer-tutor.<you>.workers.dev`) and password.
 
 ## Run locally
 
@@ -25,10 +38,6 @@ python gen_audio.py      # makes audio/*.mp3
 # then double-click index.html
 ```
 
-## Add phrases
-
-Edit the data block near the bottom of `index.html` (lessons, alphabet, culture notes), then push. The action makes audio for new phrases.
-After changing the Khmer text of an existing phrase, delete its MP3s (or run `python gen_audio.py --force`).
-Check your edits with `python gen_audio.py --check`.
+Check content edits with `python gen_audio.py --check`. After changing the Khmer text of an existing item, delete its MP3s (or run `python gen_audio.py --force`).
 
 Romanization of Khmer isn't standardized, so trust the audio over the spelling.
