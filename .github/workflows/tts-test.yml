@@ -1,0 +1,10 @@
+name: tts-test
+on: workflow_dispatch
+jobs:
+  t:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          Q=$(python3 -c "import urllib.parse;print(urllib.parse.quote('សួស្តី ខ្ញុំស្រលាញ់អ្នក'))")
+          curl -s -o g.mp3 -w 'google %{http_code} %{size_download}\n' -A "Mozilla/5.0" "https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=km&q=$Q"
+          file g.mp3
