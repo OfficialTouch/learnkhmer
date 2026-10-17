@@ -1,6 +1,7 @@
 // Khmer tutor server for the Learn Khmer site. It keeps your API keys secret.
 // Deploy as a Cloudflare Worker, then add these as Secrets under Settings → Variables and Secrets:
-//   ANTHROPIC_API_KEY, AZURE_SPEECH_KEY, AZURE_SPEECH_REGION (e.g. eastus), PASSWORD
+//   ANTHROPIC_API_KEY, PASSWORD
+// Optional, for the Sreymom voice instead of the free Google voice: AZURE_SPEECH_KEY, AZURE_SPEECH_REGION (e.g. eastus)
 const ALLOWED_ORIGIN = 'https://officialtouch.github.io';
 const MODEL = 'claude-sonnet-5-5';
 
@@ -20,7 +21,20 @@ Reply with exactly three lines: (1) Khmer script, (2) romanization, (3) English 
 Optionally add one more line starting with "Note:" about politeness (for example, speaking to elders) or a common alternative. Nothing else.`,
 };
 
-const xmlEscape = s => s.replace(/[<>&'"]/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', "'": '&apos;', '"': '&quot;' }[c]));
+// Split text into pieces of at most n characters, preferring spaces.
+const chunk = (s, n = 180) => {
+  const out = [];
+  let cur = '';
+  for (const w of s.split(/(\s+)/)) {
+    if ((cur + w).length > n && cur.trim()) { out.push(cur.trim()); cur = ''; }
+    cur += w;
+    while (cur.length > n) { out.push(cur.slice(0, n)); cur = cur.slice(n); }
+  }
+  if (cur.trim()) out.push(cur.trim());
+  return out;
+};
+
+const xmlEscape =s => s.replace(/[<>&'"]/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', "'": '&apos;', '"': '&quot;' }[c]));
 
 export default {
   async fetch(req, env) {
@@ -40,6 +54,18 @@ export default {
     if (body.mode === 'tts') {
       const text = String(body.text || '').slice(0, 500);
       if (!text) return json({ error: 'No text' }, 400);
+      if (!env.AZURE_SPEECH_KEY || !env.AZURE_SPEECH_REGION) {
+        // Free fallback: Google Translate's Khmer voice. It takes short pieces, so split and join the MP3s.
+        // shortcut: unofficial endpoint, may stop working; add the Azure secrets to switch to Sreymom.
+        const parts = [];
+        for (const piece of chunk(text)) {
+          const r = await fetch(`https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=km&q=${encodeURIComponent(piece)}`,
+            { headers: { 'User-Agent': 'Mozilla/5.0' } });
+          if (!r.ok) return json({ error: `Voice service error ${r.status}` }, 502);
+          parts.push(await r.arrayBuffer());
+        }
+        return new Response(new Blob(parts), { headers: { ...cors, 'content-type': 'audio/mpeg' } });
+      }
       const ssml = `<speak version="1.0" xml:lang="km-KH"><voice name="km-KH-SreymomNeural"><prosody rate="-10%">${xmlEscape(text)}</prosody></voice></speak>`;
       const r = await fetch(`https://${env.AZURE_SPEECH_REGION}.tts.speech.microsoft.com/cognitiveservices/v1`, {
         method: 'POST',
