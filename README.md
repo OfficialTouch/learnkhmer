@@ -23,11 +23,11 @@ Live at https://officialtouch.github.io/learnkhmer/
 
 ## Set up the AI tutor
 
-You need three free accounts. The Claude API costs a few cents per conversation; the rest is free.
+The Claude API costs a few cents per conversation; the rest is free. For the voice, the easiest free option is to open the site in **Microsoft Edge**, which has the Sreymom voice built in. The Azure key below is optional and makes the voice work in every browser.
 
 1. **Claude API key**: at console.anthropic.com, add a small credit under Billing, then create a key under API Keys.
-2. **Microsoft Speech key** (the Sreymom voice): in portal.azure.com create a **Speech** resource with the **Free F0** tier. Copy **Key 1** and the **Location/Region** (e.g. `eastus`) from "Keys and Endpoint".
-3. **Cloudflare Worker**: at dash.cloudflare.com go to Workers & Pages → Create → Worker. Name it `khmer-tutor`, deploy, click **Edit code**, paste in `worker/worker.js`, and deploy again. Then under **Settings → Variables and Secrets** add four **Secrets**: `ANTHROPIC_API_KEY`, `AZURE_SPEECH_KEY`, `AZURE_SPEECH_REGION`, `PASSWORD`.
+2. *(Optional)* **Microsoft Speech key** (Sreymom voice in any browser): in portal.azure.com create a **Speech** resource with the **Free F0** tier. Copy **Key 1** and the **Location/Region** (e.g. `eastus`) from "Keys and Endpoint".
+3. **Cloudflare Worker**: at dash.cloudflare.com go to Workers & Pages → Create → Worker. Name it `khmer-tutor`, deploy, click **Edit code**, paste in `worker/worker.js`, and deploy again. Then under **Settings → Variables and Secrets** add the **Secrets** `ANTHROPIC_API_KEY` and `PASSWORD` (plus `AZURE_SPEECH_KEY` and `AZURE_SPEECH_REGION` if you did step 2).
 4. On the site, open **AI Tutor** and paste your worker address (`https://khmer-tutor.<you>.workers.dev`) and password.
 
 ## Run locally

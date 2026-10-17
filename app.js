@@ -25,10 +25,7 @@ const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;',
 // ---- Audio ----
 function play(item) {
   const a = new Audio(`audio/${item.id}-${voice}.mp3`);
-  a.play().catch(() => {
-    // shortcut: browser voice fallback if a file is missing; most devices have no Khmer voice
-    const u = new SpeechSynthesisUtterance(item.km); u.lang = 'km-KH'; speechSynthesis.speak(u);
-  });
+  a.play().catch(() => browserSpeak(item.km)); // file missing: use the browser's Khmer voice if it has one
   return a;
 }
 function playSeq(items) {
@@ -36,22 +33,40 @@ function playSeq(items) {
   play(items[0]).onended = () => playSeq(items.slice(1));
 }
 
-// Live Sreymom voice through the tutor server (only Khmer script is spoken).
+// Speaking any Khmer text (only the Khmer script is spoken). Tries the tutor server's voice
+// (needs an Azure key), then the browser's own Khmer voice (Microsoft Edge has Sreymom built in, free).
 const ttsCache = new Map();
 const khmerOnly = t => (t.match(/[ក-៿᧠-᧿][ក-៿᧠-᧿\s?!.,…]*/g) || []).join(' ').trim();
+let kmVoice = null, serverVoiceOff = false;
+const findVoice = () => {
+  kmVoice = (window.speechSynthesis?.getVoices() || []).filter(v => /^km/i.test(v.lang))
+    .sort((a, b) => /sreymom/i.test(b.name) - /sreymom/i.test(a.name))[0] || null;
+};
+window.speechSynthesis?.addEventListener?.('voiceschanged', findVoice);
+findVoice();
+function browserSpeak(km) {
+  if (!kmVoice) return false;
+  const u = new SpeechSynthesisUtterance(km);
+  u.voice = kmVoice; u.lang = kmVoice.lang; u.rate = 0.9;
+  speechSynthesis.cancel(); speechSynthesis.speak(u);
+  return true;
+}
 async function speak(text) {
   const km = khmerOnly(text);
-  if (!km || !tutor.url) return false;
-  try {
-    if (!ttsCache.has(km)) {
-      const r = await fetch(tutor.url, { method: 'POST', headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ mode: 'tts', password: tutor.pass, text: km }) });
-      if (!r.ok) throw new Error(await r.text());
-      ttsCache.set(km, URL.createObjectURL(await r.blob()));
-    }
-    await new Audio(ttsCache.get(km)).play();
-    return true;
-  } catch (e) { console.warn('tts failed', e); return false; }
+  if (!km) return false;
+  if (tutor.url && !serverVoiceOff) {
+    try {
+      if (!ttsCache.has(km)) {
+        const r = await fetch(tutor.url, { method: 'POST', headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ mode: 'tts', password: tutor.pass, text: km }) });
+        if (!r.ok) throw new Error(r.status);
+        ttsCache.set(km, URL.createObjectURL(await r.blob()));
+      }
+      await new Audio(ttsCache.get(km)).play();
+      return true;
+    } catch { serverVoiceOff = true; } // no voice key on the server: stop asking it this visit
+  }
+  return browserSpeak(km);
 }
 async function ask(mode, messages) {
   const r = await fetch(tutor.url, { method: 'POST', headers: { 'content-type': 'application/json' },
@@ -467,6 +482,7 @@ function tutorPage() {
       <span><label class="hint"><input type="checkbox" id="auto" ${autoSpeak ? 'checked' : ''} style="width:auto"> Speak replies</label>
       <button class="btn sm" id="clear">New chat</button> <button class="btn sm" id="gear" aria-label="Settings">⚙</button></span></div>
     <p class="hint">Ask anything in English or Khmer. Your teacher answers with Khmer script, romanization and English, and speaks the Khmer out loud.</p>
+    ${kmVoice ? '' : '<p class="card hint">🔈 This browser has no Khmer voice, so replies will be silent. Open this site in <b>Microsoft Edge</b> to hear Sreymom for free.</p>'}
     <div class="chat" id="log"></div>
     <div class="tabs" id="chips">${chips.map(c => `<button class="btn sm">${esc(c)}</button>`).join('')}</div>
     <div class="composer"><textarea id="say" placeholder="Type or tap 🎤 to talk…"></textarea>
@@ -552,7 +568,7 @@ function keyboard() {
   view.innerHTML = `<textarea id="kbt" class="kbtext" lang="km" placeholder="ខ្មែរ"></textarea>
     <div class="row"><button class="btn sm" data-k=" ">Space</button><button class="btn sm" id="bs">⌫ Delete</button>
       <button class="btn sm" id="copy">Copy</button><button class="btn sm" id="clr">Clear</button>
-      ${tutor.url ? '<button class="btn sm primary" id="sayit">🔊 Speak it</button>' : ''}</div>
+      <button class="btn sm primary" id="sayit">🔊 Speak it</button></div>
     ${keys('Consonants', DATA.consonants.map(c => c.km))}${keys('Vowels (type after a consonant)', vowels)}
     ${keys('Signs: ្ stacks the next consonant below (subscript)', signs)}${keys('Numbers', digits)}`;
   const t = $('kbt');
@@ -560,7 +576,7 @@ function keyboard() {
   $('bs').onclick = () => { t.value = [...t.value].slice(0, -1).join(''); t.focus(); };
   $('clr').onclick = () => { t.value = ''; };
   $('copy').onclick = () => navigator.clipboard?.writeText(t.value);
-  if ($('sayit')) $('sayit').onclick = () => speak(t.value);
+  $('sayit').onclick = async () => { if (!(await speak(t.value))) alert('No Khmer voice in this browser. Try Microsoft Edge.'); };
 }
 
 function sheets(arg) {
