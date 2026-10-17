@@ -1,0 +1,19 @@
+name: tts-test
+on: workflow_dispatch
+jobs:
+  t:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - run: |
+          printf 'name = "t"\nmain = "worker/worker.js"\ncompatibility_date = "2026-01-01"\n' > wrangler.toml
+          npx -y wrangler@latest dev --port 8787 --var PASSWORD:pw --var ANTHROPIC_API_KEY:x > w.log 2>&1 &
+          for i in $(seq 60); do curl -s localhost:8787 >/dev/null && break; sleep 2; done
+          cat > body.json <<'J'
+          {"mode":"tts","password":"pw","full":true,"text":"Here's a natural way to ask:\n\nយាយ \"eat\" ភាសាខ្មែរនិយាយថាម៉េច? (yeay \"eat\" phiesa khmae niyeay tha mech?) – Grandma, how do you say \"eat\" in Khmer?"}
+          J
+          curl -s -o full.mp3 -X POST localhost:8787 -H 'content-type: application/json' --data @body.json
+          echo "::notice::full: $(file -b full.mp3) / $(stat -c %s full.mp3) bytes"
+          echo "::notice::log: $(grep -i 'failed' w.log | head -3 | tr '\n' ' ')"
