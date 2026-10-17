@@ -52,24 +52,26 @@ function browserSpeak(km) {
   speechSynthesis.cancel(); speechSynthesis.speak(u);
   return true;
 }
-async function speak(text) {
+// full = read the whole message (English voice + Khmer voice); otherwise only the Khmer script.
+async function speak(text, full = false) {
   const km = khmerOnly(text);
-  if (!km) return false;
+  if (!km && !full) return false;
+  const say = full ? text : km, key = (full ? 'full:' : '') + say;
   if (tutor.url && !serverVoiceOff) {
     try {
-      if (!ttsCache.has(km)) {
+      if (!ttsCache.has(key)) {
         const r = await fetch(tutor.url, { method: 'POST', headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({ mode: 'tts', password: tutor.pass, text: km }) });
+          body: JSON.stringify({ mode: 'tts', password: tutor.pass, text: say, full }) });
         if (!r.ok) throw new Error(r.status);
-        ttsCache.set(km, URL.createObjectURL(await r.blob()));
+        ttsCache.set(key, URL.createObjectURL(await r.blob()));
       }
-      const a = new Audio(ttsCache.get(km));
+      const a = new Audio(ttsCache.get(key));
       a.playbackRate = ttsSpeed; // browsers keep the pitch natural when slowed
       await a.play();
       return true;
     } catch { serverVoiceOff = true; } // no voice key on the server: stop asking it this visit
   }
-  return browserSpeak(km);
+  return km ? browserSpeak(km) : false;
 }
 async function ask(mode, messages) {
   const r = await fetch(tutor.url, { method: 'POST', headers: { 'content-type': 'application/json' },
@@ -474,7 +476,7 @@ function tutorSettings(box, after) {
 
 function bubble(m, i) {
   const html = esc(m.content).replace(/([ក-៿᧠-᧿][ក-៿᧠-᧿\s?!.,…]*)/g, '<span class="kmi">$1</span>').replace(/\n/g, '<br>');
-  return `<div class="msg ${m.role === 'user' ? 'me' : 'ai'}">${html}${m.role === 'assistant' && khmerOnly(m.content) ? ` <button class="btn sm" data-say="${i}" aria-label="Speak">🔊</button>` : ''}</div>`;
+  return `<div class="msg ${m.role === 'user' ? 'me' : 'ai'}">${html}${m.role === 'assistant' ? ` <button class="btn sm" data-say="${i}" aria-label="Speak">🔊</button>` : ''}</div>`;
 }
 
 function tutorPage() {
@@ -495,7 +497,7 @@ function tutorPage() {
   const log = $('log'), input = $('say');
   const render = () => {
     log.innerHTML = chatLog.map(bubble).join('');
-    log.querySelectorAll('[data-say]').forEach(b => b.onclick = () => speak(chatLog[+b.dataset.say].content));
+    log.querySelectorAll('[data-say]').forEach(b => b.onclick = () => speak(chatLog[+b.dataset.say].content, true));
     $('chips').style.display = chatLog.length ? 'none' : '';
     scrollTo(0, document.body.scrollHeight);
   };
@@ -510,7 +512,7 @@ function tutorPage() {
       chatLog.push({ role: 'assistant', content: reply });
       save('chat', chatLog.slice(-40));
       render();
-      if (autoSpeak) speak(reply);
+      if (autoSpeak) speak(reply, true);
     } catch (e) {
       $('typing')?.remove();
       log.insertAdjacentHTML('beforeend', `<div class="msg ai" style="border-color:var(--bad)">Couldn't reach the tutor: ${esc(e.message)}. Check the address and password (⚙).</div>`);
@@ -559,8 +561,8 @@ function translate() {
     try {
       const reply = await ask('translate', [{ role: 'user', content: text }]);
       $('tout').innerHTML = `<div class="card">${bubble({ role: 'assistant', content: reply }, 0).replace('class="msg ai"', 'style=""')}</div>`;
-      $('tout').querySelector('[data-say]')?.addEventListener('click', () => speak(reply));
-      speak(reply);
+      $('tout').querySelector('[data-say]')?.addEventListener('click', () => speak(reply, true));
+      speak(reply, true);
     } catch (e) { $('tout').innerHTML = `<div class="card">Couldn't translate: ${esc(e.message)}</div>`; }
   };
 }

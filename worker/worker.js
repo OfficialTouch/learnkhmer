@@ -148,6 +148,15 @@ function secMsGec(unixSeconds) {
   return `${hex(c)}-${hex(digest)}`;
 }
 
+// Split a tutor reply into English and Khmer pieces, dropping romanization in (brackets) right after Khmer.
+const KM = '\\u1780-\\u17FF\\u19E0-\\u19FF';
+function splitVoices(text) {
+  const clean = text.replace(new RegExp(`([${KM}][${KM}\\s?!.,…]*)\\s*\\([^)]*\\)`, 'g'), '$1');
+  return clean.split(new RegExp(`([${KM}][${KM}\\s?!.,…]*)`)).map(s => s.trim())
+    .filter(s => /[\p{L}\p{N}]/u.test(s)).slice(0, 24)
+    .map(s => ({ text: s, km: new RegExp(`[${KM}]`).test(s) }));
+}
+
 const uuidHex = () => crypto.randomUUID().replaceAll('-', '');
 function jsDate(d = new Date()) {
   const p = n => String(n).padStart(2, '0');
@@ -209,9 +218,24 @@ export default {
     if (!env.PASSWORD || body.password !== env.PASSWORD) return json({ error: 'Wrong password' }, 401);
 
     if (body.mode === 'tts') {
-      const text = String(body.text || '').slice(0, 500);
+      let text = String(body.text || '').slice(0, body.full ? 2000 : 500);
       if (!text) return json({ error: 'No text' }, 400);
       const audio = b => new Response(b, { headers: { ...cors, 'content-type': 'audio/mpeg' } });
+      if (body.full) {
+        // Whole message: English parts in an English voice, Khmer parts in Sreymom, stitched in order.
+        const segs = splitVoices(text);
+        if (!segs.length) return json({ error: 'No text' }, 400);
+        try {
+          const parts = [];
+          for (let i = 0; i < segs.length; i += 4) { // a few at a time to stay polite to the service
+            parts.push(...await Promise.all(segs.slice(i, i + 4).map(g =>
+              edgeTTS(g.text, g.km ? 'km-KH-SreymomNeural' : 'en-US-JennyNeural', g.km ? '-10%' : '+0%'))));
+          }
+          return audio(new Blob(parts));
+        } catch (e) { console.log('full voice failed:', e.message); }
+        text = segs.filter(g => g.km).map(g => g.text).join(' '); // fall back to the Khmer parts only
+        if (!text) return json({ error: 'Voice unavailable' }, 502);
+      }
       if (!env.AZURE_SPEECH_KEY || !env.AZURE_SPEECH_REGION) {
         try { return audio(await edgeTTS(text, 'km-KH-SreymomNeural', '-10%')); } catch (e) { console.log('edge voice failed:', e.message); }
       }
