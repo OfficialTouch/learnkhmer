@@ -23,7 +23,7 @@ Live at https://officialtouch.github.io/learnkhmer/
 
 ## Set up the AI tutor
 
-The Claude API costs a few cents per conversation; the rest is free. For the voice, the easiest free option is to open the site in **Microsoft Edge**, which has the Sreymom voice built in. The Azure key below is optional and makes the voice work in every browser.
+The Claude API costs a few cents per conversation; the rest is free. The worker speaks with the free Sreymom voice (Microsoft Edge's read-aloud service), so no voice key is needed. An Azure key is an optional paid upgrade.
 
 1. **Claude API key**: at console.anthropic.com, add a small credit under Billing, then create a key under API Keys.
 2. *(Optional)* **Microsoft Speech key** (Sreymom voice in any browser): in portal.azure.com create a **Speech** resource with the **Free F0** tier. Copy **Key 1** and the **Location/Region** (e.g. `eastus`) from "Keys and Endpoint".
