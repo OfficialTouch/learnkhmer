@@ -4,16 +4,19 @@ import asyncio, json, pathlib, re, sys
 VOICES = {"f": "km-KH-SreymomNeural", "m": "km-KH-PisethNeural"}
 root = pathlib.Path(__file__).parent
 html = (root / "index.html").read_text(encoding="utf-8")
-lessons = json.loads(re.search(r'<script id="phrases" type="application/json">(.*?)</script>', html, re.S).group(1))
-items = [i for lesson in lessons for i in lesson["items"]]
+data = json.loads(re.search(r'<script id="data" type="application/json">(.*?)</script>', html, re.S).group(1))
+phrases = [i for lesson in data["lessons"] for i in lesson["items"]]
+items = phrases + data["consonants"] + data["vowels"]
 
 # Self-check: catch broken data before it reaches the app.
 ids = [i["id"] for i in items]
 assert len(ids) == len(set(ids)), "duplicate phrase ids in index.html"
 for i in items:
-    assert all(i.get(k) for k in ("id", "km", "rom", "en")), f"missing field: {i}"
+    assert all(i.get(k) for k in ("id", "km", "rom")), f"missing field: {i}"
+for i in phrases:
+    assert i.get("en"), f"phrase missing English: {i}"
 if "--check" in sys.argv:
-    sys.exit(print(f"OK: {len(lessons)} lessons, {len(items)} phrases"))
+    sys.exit(print(f"OK: {len(data['lessons'])} lessons, {len(phrases)} phrases, {len(items)} audio items"))
 
 
 async def main():

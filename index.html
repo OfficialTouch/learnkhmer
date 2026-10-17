@@ -6,28 +6,33 @@
 <title>Learn Khmer</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Khmer:wght@400;600&display=swap" rel="stylesheet">
 <style>
-  :root { --bg:#faf7f2; --card:#fff; --ink:#1d1b18; --muted:#6b655c; --accent:#b4541d; --ok:#2e7d4f; --bad:#b3261e; --line:#e6dfd4; }
+  :root { --bg:#faf7f2; --card:#fff; --ink:#1d1b18; --muted:#6b655c; --accent:#b4541d; --soft:#f6e6da; --ok:#2e7d4f; --bad:#b3261e; --line:#e6dfd4; }
   @media (prefers-color-scheme: dark) {
-    :root { --bg:#171513; --card:#221f1c; --ink:#f1ece4; --muted:#a39b8f; --accent:#e8874a; --ok:#5cc28a; --bad:#ef7a72; --line:#3a352f; }
+    :root { --bg:#171513; --card:#221f1c; --ink:#f1ece4; --muted:#a39b8f; --accent:#e8874a; --soft:#3a2a20; --ok:#5cc28a; --bad:#ef7a72; --line:#3a352f; }
   }
   * { box-sizing:border-box; }
   body { margin:0; background:var(--bg); color:var(--ink); font:16px/1.5 system-ui, sans-serif; }
-  header { position:sticky; top:0; background:var(--bg); border-bottom:1px solid var(--line); padding:12px 16px; display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
-  header h1 { font-size:18px; margin:0 auto 0 0; }
-  nav button, select { font:inherit; padding:6px 12px; border-radius:999px; border:1px solid var(--line); background:var(--card); color:var(--ink); }
-  nav button.on { background:var(--accent); color:#fff; border-color:var(--accent); }
-  main { max-width:640px; margin:0 auto; padding:16px; }
+  header { position:sticky; top:0; z-index:1; background:var(--bg); border-bottom:1px solid var(--line); padding:10px 16px; }
+  .top { display:flex; align-items:center; gap:8px; max-width:900px; margin:0 auto; }
+  .top h1 { font-size:18px; margin:0 auto 0 0; }
+  .top h1 a { color:inherit; text-decoration:none; }
+  nav { display:flex; gap:6px; overflow-x:auto; max-width:900px; margin:8px auto 0; scrollbar-width:none; }
+  nav a, select { font:inherit; font-size:14px; padding:6px 12px; border-radius:999px; border:1px solid var(--line); background:var(--card); color:var(--ink); text-decoration:none; white-space:nowrap; }
+  nav a.on { background:var(--accent); color:#fff; border-color:var(--accent); }
+  main { max-width:900px; margin:0 auto; padding:16px; }
+  .narrow { max-width:640px; margin:0 auto; }
   .hint { color:var(--muted); }
-  .card, .lesson { display:block; width:100%; text-align:left; background:var(--card); border:1px solid var(--line); border-radius:14px; padding:14px 16px; margin:0 0 12px; color:var(--ink); font:inherit; }
+  .card, .lesson { display:block; width:100%; text-align:left; background:var(--card); border:1px solid var(--line); border-radius:14px; padding:14px 16px; margin:0 0 12px; color:var(--ink); font:inherit; text-decoration:none; }
   .lesson { display:flex; justify-content:space-between; gap:8px; cursor:pointer; }
-  .lesson span { color:var(--muted); }
+  .lesson span { color:var(--muted); white-space:nowrap; }
   .lesson:disabled { opacity:.5; cursor:default; }
+  h3.level { margin:24px 0 10px; color:var(--accent); font-size:15px; text-transform:uppercase; letter-spacing:.06em; }
   .rom { font-size:22px; font-weight:600; }
   .km { font-family:'Noto Sans Khmer', sans-serif; color:var(--muted); font-size:15px; }
   .en { margin-top:2px; }
   .note { color:var(--muted); font-size:14px; font-style:italic; }
   .row { display:flex; gap:8px; margin-top:10px; flex-wrap:wrap; align-items:center; }
-  .btn { font:inherit; padding:10px 16px; border-radius:10px; border:1px solid var(--line); background:var(--card); color:var(--ink); cursor:pointer; }
+  .btn { font:inherit; padding:10px 16px; border-radius:10px; border:1px solid var(--line); background:var(--card); color:var(--ink); cursor:pointer; text-decoration:none; display:inline-block; }
   .btn.primary { background:var(--accent); border-color:var(--accent); color:#fff; }
   .btn.ok { background:var(--ok); border-color:var(--ok); color:#fff; }
   .btn.bad { background:var(--bad); border-color:var(--bad); color:#fff; }
@@ -35,109 +40,1124 @@
   .big .rom { font-size:30px; }
   .opts .btn { width:100%; margin-bottom:8px; text-align:left; }
   audio { height:36px; max-width:100%; }
-  button:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+  button:focus-visible, a:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+  /* home */
+  .hero { text-align:center; padding:40px 8px 28px; }
+  .hero .kh { font-family:'Noto Sans Khmer', sans-serif; font-size:44px; color:var(--accent); line-height:1.3; }
+  .hero h2 { font-size:clamp(26px, 6vw, 40px); margin:8px 0; line-height:1.15; }
+  .hero p { color:var(--muted); max-width:520px; margin:0 auto 18px; }
+  .hero .row { justify-content:center; }
+  .features { display:grid; grid-template-columns:repeat(auto-fit, minmax(240px, 1fr)); gap:12px; }
+  .features .card { margin:0; }
+  .features b { display:block; font-size:17px; }
+  .features span { color:var(--muted); font-size:15px; }
+  /* alphabet + games */
+  .grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(84px, 1fr)); gap:8px; }
+  .tile { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:10px 4px; color:var(--ink); font:inherit; cursor:pointer; display:flex; flex-direction:column; align-items:center; }
+  .tile .glyph { font-family:'Noto Sans Khmer', sans-serif; font-size:34px; line-height:1.4; }
+  .tile small { color:var(--muted); font-size:12px; }
+  .tile.o { background:var(--soft); }
+  .match { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  .match .tile { min-height:60px; justify-content:center; text-align:center; padding:8px; }
+  .match .tile.sel { border-color:var(--accent); box-shadow:0 0 0 2px var(--accent); }
+  .match .tile.done { opacity:.35; cursor:default; }
+  .match .tile.wrong { border-color:var(--bad); box-shadow:0 0 0 2px var(--bad); }
 </style>
 </head>
 <body>
 <header>
-  <h1>Learn Khmer</h1>
+  <div class="top">
+    <h1><a href="#home">Learn Khmer</a></h1>
+    <select id="voice" aria-label="Voice">
+      <option value="f">Female voice</option>
+      <option value="m">Male voice</option>
+    </select>
+  </div>
   <nav>
-    <button data-v="lessons">Lessons</button>
-    <button data-v="review">Review</button>
-    <button data-v="quiz">Quiz</button>
+    <a href="#home">Home</a>
+    <a href="#lessons">Lessons</a>
+    <a href="#alphabet">Alphabet</a>
+    <a href="#review">Review</a>
+    <a href="#quiz">Quiz</a>
+    <a href="#games">Games</a>
+    <a href="#culture">Culture</a>
   </nav>
-  <select id="voice" aria-label="Voice">
-    <option value="f">Female voice</option>
-    <option value="m">Male voice</option>
-  </select>
 </header>
 <main id="main">Loading…</main>
-<!-- Lessons: edit here. Each lesson is one "Day". -->
-<script id="phrases" type="application/json">
-[
+<!-- All content lives here: lessons (each one is a "Day"), alphabet, culture notes. -->
+<script id="data" type="application/json">
+{
+ "lessons": [
   {
-    "title": "Greetings & basics",
-    "items": [
-      {"id": "hello", "km": "សួស្តី", "rom": "suosdei", "en": "Hello"},
-      {"id": "hello-polite", "km": "ជំរាបសួរ", "rom": "chumreap suor", "en": "Hello (polite, for elders)", "note": "Say it with hands pressed together (sampeah)."},
-      {"id": "thank-you", "km": "អរគុណ", "rom": "arkun", "en": "Thank you"},
-      {"id": "yes-m", "km": "បាទ", "rom": "baat", "en": "Yes (said by men)"},
-      {"id": "yes-f", "km": "ចាស", "rom": "chaa", "en": "Yes (said by women)"},
-      {"id": "no", "km": "ទេ", "rom": "te", "en": "No"},
-      {"id": "sorry", "km": "សុំទោស", "rom": "som tos", "en": "Sorry / Excuse me"},
-      {"id": "goodbye", "km": "លាហើយ", "rom": "lea haey", "en": "Goodbye"}
-    ]
+   "level": "Beginner",
+   "title": "Greetings & basics",
+   "items": [
+    {
+     "id": "hello",
+     "km": "សួស្តី",
+     "rom": "suosdei",
+     "en": "Hello"
+    },
+    {
+     "id": "hello-polite",
+     "km": "ជំរាបសួរ",
+     "rom": "chumreap suor",
+     "en": "Hello (polite, for elders)",
+     "note": "Say it with hands pressed together (sampeah)."
+    },
+    {
+     "id": "thank-you",
+     "km": "អរគុណ",
+     "rom": "arkun",
+     "en": "Thank you"
+    },
+    {
+     "id": "yes-m",
+     "km": "បាទ",
+     "rom": "baat",
+     "en": "Yes (said by men)"
+    },
+    {
+     "id": "yes-f",
+     "km": "ចាស",
+     "rom": "chaa",
+     "en": "Yes (said by women)"
+    },
+    {
+     "id": "no",
+     "km": "ទេ",
+     "rom": "te",
+     "en": "No"
+    },
+    {
+     "id": "sorry",
+     "km": "សុំទោស",
+     "rom": "som tos",
+     "en": "Sorry / Excuse me"
+    },
+    {
+     "id": "goodbye",
+     "km": "លាហើយ",
+     "rom": "lea haey",
+     "en": "Goodbye"
+    }
+   ]
   },
   {
-    "title": "Small talk",
-    "items": [
-      {"id": "how-are-you", "km": "សុខសប្បាយទេ?", "rom": "sok sabaay te?", "en": "How are you?"},
-      {"id": "im-fine", "km": "ខ្ញុំសុខសប្បាយ", "rom": "khnhom sok sabaay", "en": "I'm fine"},
-      {"id": "and-you", "km": "ចុះអ្នកវិញ?", "rom": "chos neak vinh?", "en": "And you?"},
-      {"id": "your-name", "km": "អ្នកឈ្មោះអ្វី?", "rom": "neak chmuah avei?", "en": "What's your name?"},
-      {"id": "my-name", "km": "ខ្ញុំឈ្មោះ...", "rom": "khnhom chmuah ...", "en": "My name is ..."},
-      {"id": "nice-meet", "km": "រីករាយដែលបានជួប", "rom": "rikreay dael baan chuop", "en": "Nice to meet you"},
-      {"id": "good-morning", "km": "អរុណសួស្តី", "rom": "arun suosdei", "en": "Good morning"},
-      {"id": "good-night", "km": "រាត្រីសួស្តី", "rom": "reatrei suosdei", "en": "Good night"}
-    ]
+   "level": "Beginner",
+   "title": "Small talk",
+   "items": [
+    {
+     "id": "how-are-you",
+     "km": "សុខសប្បាយទេ?",
+     "rom": "sok sabaay te?",
+     "en": "How are you?"
+    },
+    {
+     "id": "im-fine",
+     "km": "ខ្ញុំសុខសប្បាយ",
+     "rom": "khnhom sok sabaay",
+     "en": "I'm fine"
+    },
+    {
+     "id": "and-you",
+     "km": "ចុះអ្នកវិញ?",
+     "rom": "chos neak vinh?",
+     "en": "And you?"
+    },
+    {
+     "id": "your-name",
+     "km": "អ្នកឈ្មោះអ្វី?",
+     "rom": "neak chmuah avei?",
+     "en": "What's your name?"
+    },
+    {
+     "id": "my-name",
+     "km": "ខ្ញុំឈ្មោះ...",
+     "rom": "khnhom chmuah ...",
+     "en": "My name is ..."
+    },
+    {
+     "id": "nice-meet",
+     "km": "រីករាយដែលបានជួប",
+     "rom": "rikreay dael baan chuop",
+     "en": "Nice to meet you"
+    },
+    {
+     "id": "good-morning",
+     "km": "អរុណសួស្តី",
+     "rom": "arun suosdei",
+     "en": "Good morning"
+    },
+    {
+     "id": "good-night",
+     "km": "រាត្រីសួស្តី",
+     "rom": "reatrei suosdei",
+     "en": "Good night"
+    }
+   ]
   },
   {
-    "title": "Family",
-    "items": [
-      {"id": "family", "km": "គ្រួសារ", "rom": "kruosaa", "en": "Family"},
-      {"id": "mom", "km": "ម៉ែ", "rom": "mae", "en": "Mom"},
-      {"id": "dad", "km": "ប៉ា", "rom": "pa", "en": "Dad"},
-      {"id": "older-sib", "km": "បង", "rom": "bong", "en": "Older sibling / older person", "note": "Also used to address a partner or someone a bit older."},
-      {"id": "younger-sib", "km": "ប្អូន", "rom": "p'oun", "en": "Younger sibling / younger person"},
-      {"id": "grandma", "km": "យាយ", "rom": "yeay", "en": "Grandmother"},
-      {"id": "grandpa", "km": "តា", "rom": "taa", "en": "Grandfather"},
-      {"id": "child", "km": "កូន", "rom": "koun", "en": "Child (son/daughter)"}
-    ]
+   "level": "Beginner",
+   "title": "Family",
+   "items": [
+    {
+     "id": "family",
+     "km": "គ្រួសារ",
+     "rom": "kruosaa",
+     "en": "Family"
+    },
+    {
+     "id": "mom",
+     "km": "ម៉ែ",
+     "rom": "mae",
+     "en": "Mom"
+    },
+    {
+     "id": "dad",
+     "km": "ប៉ា",
+     "rom": "pa",
+     "en": "Dad"
+    },
+    {
+     "id": "older-sib",
+     "km": "បង",
+     "rom": "bong",
+     "en": "Older sibling / older person",
+     "note": "Also used to address a partner or someone a bit older."
+    },
+    {
+     "id": "younger-sib",
+     "km": "ប្អូន",
+     "rom": "p'oun",
+     "en": "Younger sibling / younger person"
+    },
+    {
+     "id": "grandma",
+     "km": "យាយ",
+     "rom": "yeay",
+     "en": "Grandmother"
+    },
+    {
+     "id": "grandpa",
+     "km": "តា",
+     "rom": "taa",
+     "en": "Grandfather"
+    },
+    {
+     "id": "child",
+     "km": "កូន",
+     "rom": "koun",
+     "en": "Child (son/daughter)"
+    }
+   ]
   },
   {
-    "title": "Food & eating",
-    "items": [
-      {"id": "eaten-yet", "km": "ញ៉ាំបាយនៅ?", "rom": "nham baay nov?", "en": "Have you eaten yet?", "note": "A common, caring greeting at home."},
-      {"id": "ate-already", "km": "ញ៉ាំហើយ", "rom": "nham haey", "en": "I've eaten already"},
-      {"id": "eat-rice", "km": "ញ៉ាំបាយ", "rom": "nham baay", "en": "Eat (a meal)"},
-      {"id": "hungry", "km": "ខ្ញុំឃ្លាន", "rom": "khnhom khlean", "en": "I'm hungry"},
-      {"id": "thirsty", "km": "ខ្ញុំស្រេកទឹក", "rom": "khnhom srek tuek", "en": "I'm thirsty"},
-      {"id": "water", "km": "ទឹក", "rom": "tuek", "en": "Water"},
-      {"id": "delicious", "km": "ឆ្ងាញ់ណាស់", "rom": "chngany nas", "en": "Very delicious"},
-      {"id": "full", "km": "ឆ្អែតហើយ", "rom": "ch'aet haey", "en": "I'm full"}
-    ]
+   "level": "Beginner",
+   "title": "Food & eating",
+   "items": [
+    {
+     "id": "eaten-yet",
+     "km": "ញ៉ាំបាយនៅ?",
+     "rom": "nham baay nov?",
+     "en": "Have you eaten yet?",
+     "note": "A common, caring greeting at home."
+    },
+    {
+     "id": "ate-already",
+     "km": "ញ៉ាំហើយ",
+     "rom": "nham haey",
+     "en": "I've eaten already"
+    },
+    {
+     "id": "eat-rice",
+     "km": "ញ៉ាំបាយ",
+     "rom": "nham baay",
+     "en": "Eat (a meal)"
+    },
+    {
+     "id": "hungry",
+     "km": "ខ្ញុំឃ្លាន",
+     "rom": "khnhom khlean",
+     "en": "I'm hungry"
+    },
+    {
+     "id": "thirsty",
+     "km": "ខ្ញុំស្រេកទឹក",
+     "rom": "khnhom srek tuek",
+     "en": "I'm thirsty"
+    },
+    {
+     "id": "water",
+     "km": "ទឹក",
+     "rom": "tuek",
+     "en": "Water"
+    },
+    {
+     "id": "delicious",
+     "km": "ឆ្ងាញ់ណាស់",
+     "rom": "chngany nas",
+     "en": "Very delicious"
+    },
+    {
+     "id": "full",
+     "km": "ឆ្អែតហើយ",
+     "rom": "ch'aet haey",
+     "en": "I'm full"
+    }
+   ]
   },
   {
-    "title": "Around the house",
-    "items": [
-      {"id": "where-going", "km": "ទៅណា?", "rom": "tov na?", "en": "Where are you going?"},
-      {"id": "come-here", "km": "មកនេះ", "rom": "mok nih", "en": "Come here"},
-      {"id": "sit", "km": "អង្គុយ", "rom": "angkuy", "en": "Sit down"},
-      {"id": "wait", "km": "ចាំបន្តិច", "rom": "cham bantech", "en": "Wait a moment"},
-      {"id": "dont-understand", "km": "ខ្ញុំមិនយល់ទេ", "rom": "khnhom min yol te", "en": "I don't understand"},
-      {"id": "speak-slowly", "km": "និយាយយឺតៗ", "rom": "niyeay yuet yuet", "en": "Speak slowly"},
-      {"id": "again", "km": "ម្តងទៀត", "rom": "mdong tiet", "en": "One more time"},
-      {"id": "what-is-this", "km": "នេះជាអ្វី?", "rom": "nih chea avei?", "en": "What is this?"}
-    ]
+   "level": "Beginner",
+   "title": "Around the house",
+   "items": [
+    {
+     "id": "where-going",
+     "km": "ទៅណា?",
+     "rom": "tov na?",
+     "en": "Where are you going?"
+    },
+    {
+     "id": "come-here",
+     "km": "មកនេះ",
+     "rom": "mok nih",
+     "en": "Come here"
+    },
+    {
+     "id": "sit",
+     "km": "អង្គុយ",
+     "rom": "angkuy",
+     "en": "Sit down"
+    },
+    {
+     "id": "wait",
+     "km": "ចាំបន្តិច",
+     "rom": "cham bantech",
+     "en": "Wait a moment"
+    },
+    {
+     "id": "dont-understand",
+     "km": "ខ្ញុំមិនយល់ទេ",
+     "rom": "khnhom min yol te",
+     "en": "I don't understand"
+    },
+    {
+     "id": "speak-slowly",
+     "km": "និយាយយឺតៗ",
+     "rom": "niyeay yuet yuet",
+     "en": "Speak slowly"
+    },
+    {
+     "id": "again",
+     "km": "ម្តងទៀត",
+     "rom": "mdong tiet",
+     "en": "One more time"
+    },
+    {
+     "id": "what-is-this",
+     "km": "នេះជាអ្វី?",
+     "rom": "nih chea avei?",
+     "en": "What is this?"
+    }
+   ]
   },
   {
-    "title": "Feelings",
-    "items": [
-      {"id": "love-you", "km": "ខ្ញុំស្រលាញ់អ្នក", "rom": "khnhom srolanh neak", "en": "I love you"},
-      {"id": "miss-you", "km": "ខ្ញុំនឹកអ្នក", "rom": "khnhom nuek neak", "en": "I miss you"},
-      {"id": "happy", "km": "ខ្ញុំសប្បាយចិត្ត", "rom": "khnhom sabaay chet", "en": "I'm happy"},
-      {"id": "tired", "km": "ខ្ញុំហត់", "rom": "khnhom hot", "en": "I'm tired"},
-      {"id": "very-good", "km": "ល្អណាស់", "rom": "l'or nas", "en": "Very good"},
-      {"id": "no-problem", "km": "អត់អីទេ", "rom": "ot ei te", "en": "It's okay / No problem"},
-      {"id": "sleep-well", "km": "គេងលក់ស្រួល", "rom": "keng lok sruol", "en": "Sleep well"}
-    ]
+   "level": "Beginner",
+   "title": "Feelings",
+   "items": [
+    {
+     "id": "love-you",
+     "km": "ខ្ញុំស្រលាញ់អ្នក",
+     "rom": "khnhom srolanh neak",
+     "en": "I love you"
+    },
+    {
+     "id": "miss-you",
+     "km": "ខ្ញុំនឹកអ្នក",
+     "rom": "khnhom nuek neak",
+     "en": "I miss you"
+    },
+    {
+     "id": "happy",
+     "km": "ខ្ញុំសប្បាយចិត្ត",
+     "rom": "khnhom sabaay chet",
+     "en": "I'm happy"
+    },
+    {
+     "id": "tired",
+     "km": "ខ្ញុំហត់",
+     "rom": "khnhom hot",
+     "en": "I'm tired"
+    },
+    {
+     "id": "very-good",
+     "km": "ល្អណាស់",
+     "rom": "l'or nas",
+     "en": "Very good"
+    },
+    {
+     "id": "no-problem",
+     "km": "អត់អីទេ",
+     "rom": "ot ei te",
+     "en": "It's okay / No problem"
+    },
+    {
+     "id": "sleep-well",
+     "km": "គេងលក់ស្រួល",
+     "rom": "keng lok sruol",
+     "en": "Sleep well"
+    }
+   ]
+  },
+  {
+   "level": "Intermediate",
+   "title": "Numbers 1–10",
+   "items": [
+    {
+     "id": "n1",
+     "km": "មួយ",
+     "rom": "muoy",
+     "en": "One (1)"
+    },
+    {
+     "id": "n2",
+     "km": "ពីរ",
+     "rom": "pii",
+     "en": "Two (2)"
+    },
+    {
+     "id": "n3",
+     "km": "បី",
+     "rom": "bei",
+     "en": "Three (3)"
+    },
+    {
+     "id": "n4",
+     "km": "បួន",
+     "rom": "buon",
+     "en": "Four (4)"
+    },
+    {
+     "id": "n5",
+     "km": "ប្រាំ",
+     "rom": "pram",
+     "en": "Five (5)"
+    },
+    {
+     "id": "n6",
+     "km": "ប្រាំមួយ",
+     "rom": "pram muoy",
+     "en": "Six (6)",
+     "note": "6–9 are 'five-one', 'five-two', and so on."
+    },
+    {
+     "id": "n7",
+     "km": "ប្រាំពីរ",
+     "rom": "pram pii",
+     "en": "Seven (7)"
+    },
+    {
+     "id": "n8",
+     "km": "ប្រាំបី",
+     "rom": "pram bei",
+     "en": "Eight (8)"
+    },
+    {
+     "id": "n9",
+     "km": "ប្រាំបួន",
+     "rom": "pram buon",
+     "en": "Nine (9)"
+    },
+    {
+     "id": "n10",
+     "km": "ដប់",
+     "rom": "dop",
+     "en": "Ten (10)"
+    }
+   ]
+  },
+  {
+   "level": "Intermediate",
+   "title": "Time & days",
+   "items": [
+    {
+     "id": "today",
+     "km": "ថ្ងៃនេះ",
+     "rom": "thngai nih",
+     "en": "Today"
+    },
+    {
+     "id": "yesterday",
+     "km": "ម្សិលមិញ",
+     "rom": "msel minh",
+     "en": "Yesterday"
+    },
+    {
+     "id": "tomorrow",
+     "km": "ថ្ងៃស្អែក",
+     "rom": "thngai s'aek",
+     "en": "Tomorrow"
+    },
+    {
+     "id": "now",
+     "km": "ឥឡូវនេះ",
+     "rom": "eylov nih",
+     "en": "Right now"
+    },
+    {
+     "id": "what-time",
+     "km": "ម៉ោងប៉ុន្មាន?",
+     "rom": "maong ponman?",
+     "en": "What time is it?"
+    },
+    {
+     "id": "morning",
+     "km": "ពេលព្រឹក",
+     "rom": "pel pruek",
+     "en": "In the morning"
+    },
+    {
+     "id": "evening",
+     "km": "ពេលល្ងាច",
+     "rom": "pel lngiach",
+     "en": "In the evening"
+    },
+    {
+     "id": "night",
+     "km": "យប់",
+     "rom": "yup",
+     "en": "Night"
+    }
+   ]
+  },
+  {
+   "level": "Intermediate",
+   "title": "Question words",
+   "items": [
+    {
+     "id": "q-what",
+     "km": "អ្វី?",
+     "rom": "avei?",
+     "en": "What?"
+    },
+    {
+     "id": "q-who",
+     "km": "អ្នកណា?",
+     "rom": "neak na?",
+     "en": "Who?"
+    },
+    {
+     "id": "q-when",
+     "km": "ពេលណា?",
+     "rom": "pel na?",
+     "en": "When?"
+    },
+    {
+     "id": "q-where",
+     "km": "នៅឯណា?",
+     "rom": "nov ae na?",
+     "en": "Where?"
+    },
+    {
+     "id": "q-why",
+     "km": "ហេតុអ្វី?",
+     "rom": "haet avei?",
+     "en": "Why?"
+    },
+    {
+     "id": "q-how",
+     "km": "យ៉ាងម៉េច?",
+     "rom": "yang mech?",
+     "en": "How?"
+    },
+    {
+     "id": "q-howmuch",
+     "km": "ប៉ុន្មាន?",
+     "rom": "ponman?",
+     "en": "How much? / How many?"
+    },
+    {
+     "id": "q-really",
+     "km": "មែនទេ?",
+     "rom": "men te?",
+     "en": "Really? / Right?"
+    }
+   ]
+  },
+  {
+   "level": "Intermediate",
+   "title": "At the market",
+   "items": [
+    {
+     "id": "how-much-cost",
+     "km": "ថ្លៃប៉ុន្មាន?",
+     "rom": "thlai ponman?",
+     "en": "How much does it cost?"
+    },
+    {
+     "id": "expensive",
+     "km": "ថ្លៃណាស់",
+     "rom": "thlai nas",
+     "en": "Very expensive"
+    },
+    {
+     "id": "cheap",
+     "km": "ថោក",
+     "rom": "thaok",
+     "en": "Cheap"
+    },
+    {
+     "id": "lower-price",
+     "km": "ចុះថ្លៃបានទេ?",
+     "rom": "chos thlai baan te?",
+     "en": "Can you lower the price?"
+    },
+    {
+     "id": "want-buy",
+     "km": "ខ្ញុំចង់ទិញ...",
+     "rom": "khnhom chang tinh ...",
+     "en": "I want to buy ..."
+    },
+    {
+     "id": "take-this",
+     "km": "ខ្ញុំយកមួយនេះ",
+     "rom": "khnhom yok muoy nih",
+     "en": "I'll take this one"
+    },
+    {
+     "id": "money",
+     "km": "លុយ",
+     "rom": "luy",
+     "en": "Money"
+    }
+   ]
+  },
+  {
+   "level": "Intermediate",
+   "title": "Getting around",
+   "items": [
+    {
+     "id": "straight",
+     "km": "ទៅមុខ",
+     "rom": "tov mukh",
+     "en": "Go straight"
+    },
+    {
+     "id": "left",
+     "km": "បត់ឆ្វេង",
+     "rom": "bot chveng",
+     "en": "Turn left"
+    },
+    {
+     "id": "right",
+     "km": "បត់ស្តាំ",
+     "rom": "bot sdam",
+     "en": "Turn right"
+    },
+    {
+     "id": "stop-here",
+     "km": "ឈប់នៅទីនេះ",
+     "rom": "chhup nov ti nih",
+     "en": "Stop here"
+    },
+    {
+     "id": "near",
+     "km": "ជិត",
+     "rom": "chit",
+     "en": "Near"
+    },
+    {
+     "id": "far",
+     "km": "ឆ្ងាយ",
+     "rom": "chngay",
+     "en": "Far"
+    },
+    {
+     "id": "house",
+     "km": "ផ្ទះ",
+     "rom": "phteah",
+     "en": "House / home"
+    },
+    {
+     "id": "going-home",
+     "km": "ខ្ញុំទៅផ្ទះ",
+     "rom": "khnhom tov phteah",
+     "en": "I'm going home"
+    }
+   ]
+  },
+  {
+   "level": "Advanced",
+   "title": "Talking about yourself",
+   "items": [
+    {
+     "id": "live-america",
+     "km": "ខ្ញុំរស់នៅអាមេរិក",
+     "rom": "khnhom rueh nov amerik",
+     "en": "I live in America"
+    },
+    {
+     "id": "learning-khmer",
+     "km": "ខ្ញុំកំពុងរៀនភាសាខ្មែរ",
+     "rom": "khnhom kampung rien phiasa khmae",
+     "en": "I'm learning Khmer"
+    },
+    {
+     "id": "speak-little",
+     "km": "ខ្ញុំនិយាយខ្មែរបន្តិចបន្តួច",
+     "rom": "khnhom niyeay khmae bantech bantuoch",
+     "en": "I speak a little Khmer"
+    },
+    {
+     "id": "work-every-day",
+     "km": "ខ្ញុំធ្វើការរាល់ថ្ងៃ",
+     "rom": "khnhom thveu kar roal thngai",
+     "en": "I work every day"
+    },
+    {
+     "id": "want-cambodia",
+     "km": "ខ្ញុំចង់ទៅប្រទេសកម្ពុជា",
+     "rom": "khnhom chang tov prates kampuchea",
+     "en": "I want to go to Cambodia"
+    },
+    {
+     "id": "dont-know",
+     "km": "ខ្ញុំមិនដឹងទេ",
+     "rom": "khnhom min doeng te",
+     "en": "I don't know"
+    }
+   ]
+  },
+  {
+   "level": "Advanced",
+   "title": "Polite speech with elders",
+   "items": [
+    {
+     "id": "please",
+     "km": "សូម",
+     "rom": "som",
+     "en": "Please (before a request)"
+    },
+    {
+     "id": "please-come-in",
+     "km": "សូមអញ្ជើញ",
+     "rom": "som anhcheunh",
+     "en": "Please come in / go ahead"
+    },
+    {
+     "id": "thanks-a-lot",
+     "km": "អរគុណច្រើន",
+     "rom": "arkun chraen",
+     "en": "Thank you very much"
+    },
+    {
+     "id": "beg-pardon",
+     "km": "សូមអភ័យទោស",
+     "rom": "som aphey tos",
+     "en": "I beg your pardon (formal)"
+    },
+    {
+     "id": "goodbye-polite",
+     "km": "ជំរាបលា",
+     "rom": "chumreap lea",
+     "en": "Goodbye (polite)"
+    },
+    {
+     "id": "sir",
+     "km": "លោក",
+     "rom": "lok",
+     "en": "Sir / Mr."
+    },
+    {
+     "id": "madam",
+     "km": "អ្នកស្រី",
+     "rom": "neak srey",
+     "en": "Madam / Mrs."
+    }
+   ]
+  },
+  {
+   "level": "Advanced",
+   "title": "Making plans",
+   "items": [
+    {
+     "id": "lets-eat",
+     "km": "តោះទៅញ៉ាំបាយ",
+     "rom": "tos tov nham baay",
+     "en": "Let's go eat"
+    },
+    {
+     "id": "free-weekend",
+     "km": "ចុងសប្តាហ៍នេះអ្នកទំនេរទេ?",
+     "rom": "chong saptah nih neak tumne te?",
+     "en": "Are you free this weekend?"
+    },
+    {
+     "id": "visit-mom",
+     "km": "ថ្ងៃស្អែកខ្ញុំនឹងទៅលេងផ្ទះម៉ែ",
+     "rom": "thngai s'aek khnhom nueng tov leng phteah mae",
+     "en": "Tomorrow I'll visit Mom's house"
+    },
+    {
+     "id": "when-back",
+     "km": "ពេលណាអ្នកមកវិញ?",
+     "rom": "pel na neak mok vinh?",
+     "en": "When are you coming back?"
+    },
+    {
+     "id": "help-me",
+     "km": "អាចជួយខ្ញុំបានទេ?",
+     "rom": "ach chuoy khnhom baan te?",
+     "en": "Can you help me?"
+    }
+   ]
+  },
+  {
+   "level": "Advanced",
+   "title": "Learning with family",
+   "items": [
+    {
+     "id": "word-meaning",
+     "km": "ពាក្យនេះមានន័យថាអ្វី?",
+     "rom": "peaky nih mean ney tha avei?",
+     "en": "What does this word mean?"
+    },
+    {
+     "id": "how-say",
+     "km": "...និយាយជាភាសាខ្មែរយ៉ាងម៉េច?",
+     "rom": "... niyeay chea phiasa khmae yang mech?",
+     "en": "How do you say ... in Khmer?"
+    },
+    {
+     "id": "i-think",
+     "km": "ខ្ញុំគិតថា...",
+     "rom": "khnhom kit tha ...",
+     "en": "I think that ..."
+    },
+    {
+     "id": "agree",
+     "km": "ខ្ញុំយល់ព្រម",
+     "rom": "khnhom yol prom",
+     "en": "I agree"
+    },
+    {
+     "id": "correct-me",
+     "km": "ជួយកែខ្ញុំផង",
+     "rom": "chuoy kae khnhom phong",
+     "en": "Please correct me"
+    }
+   ]
   }
-]
+ ],
+ "consonants": [
+  {
+   "id": "c01",
+   "km": "ក",
+   "rom": "kâ",
+   "series": "a"
+  },
+  {
+   "id": "c02",
+   "km": "ខ",
+   "rom": "khâ",
+   "series": "a"
+  },
+  {
+   "id": "c03",
+   "km": "គ",
+   "rom": "kô",
+   "series": "o"
+  },
+  {
+   "id": "c04",
+   "km": "ឃ",
+   "rom": "khô",
+   "series": "o"
+  },
+  {
+   "id": "c05",
+   "km": "ង",
+   "rom": "ngô",
+   "series": "o"
+  },
+  {
+   "id": "c06",
+   "km": "ច",
+   "rom": "châ",
+   "series": "a"
+  },
+  {
+   "id": "c07",
+   "km": "ឆ",
+   "rom": "chhâ",
+   "series": "a"
+  },
+  {
+   "id": "c08",
+   "km": "ជ",
+   "rom": "chô",
+   "series": "o"
+  },
+  {
+   "id": "c09",
+   "km": "ឈ",
+   "rom": "chhô",
+   "series": "o"
+  },
+  {
+   "id": "c10",
+   "km": "ញ",
+   "rom": "nhô",
+   "series": "o"
+  },
+  {
+   "id": "c11",
+   "km": "ដ",
+   "rom": "dâ",
+   "series": "a"
+  },
+  {
+   "id": "c12",
+   "km": "ឋ",
+   "rom": "thâ",
+   "series": "a"
+  },
+  {
+   "id": "c13",
+   "km": "ឌ",
+   "rom": "dô",
+   "series": "o"
+  },
+  {
+   "id": "c14",
+   "km": "ឍ",
+   "rom": "thô",
+   "series": "o"
+  },
+  {
+   "id": "c15",
+   "km": "ណ",
+   "rom": "nâ",
+   "series": "a"
+  },
+  {
+   "id": "c16",
+   "km": "ត",
+   "rom": "tâ",
+   "series": "a"
+  },
+  {
+   "id": "c17",
+   "km": "ថ",
+   "rom": "thâ",
+   "series": "a"
+  },
+  {
+   "id": "c18",
+   "km": "ទ",
+   "rom": "tô",
+   "series": "o"
+  },
+  {
+   "id": "c19",
+   "km": "ធ",
+   "rom": "thô",
+   "series": "o"
+  },
+  {
+   "id": "c20",
+   "km": "ន",
+   "rom": "nô",
+   "series": "o"
+  },
+  {
+   "id": "c21",
+   "km": "ប",
+   "rom": "bâ",
+   "series": "a"
+  },
+  {
+   "id": "c22",
+   "km": "ផ",
+   "rom": "phâ",
+   "series": "a"
+  },
+  {
+   "id": "c23",
+   "km": "ព",
+   "rom": "pô",
+   "series": "o"
+  },
+  {
+   "id": "c24",
+   "km": "ភ",
+   "rom": "phô",
+   "series": "o"
+  },
+  {
+   "id": "c25",
+   "km": "ម",
+   "rom": "mô",
+   "series": "o"
+  },
+  {
+   "id": "c26",
+   "km": "យ",
+   "rom": "yô",
+   "series": "o"
+  },
+  {
+   "id": "c27",
+   "km": "រ",
+   "rom": "rô",
+   "series": "o"
+  },
+  {
+   "id": "c28",
+   "km": "ល",
+   "rom": "lô",
+   "series": "o"
+  },
+  {
+   "id": "c29",
+   "km": "វ",
+   "rom": "vô",
+   "series": "o"
+  },
+  {
+   "id": "c30",
+   "km": "ស",
+   "rom": "sâ",
+   "series": "a"
+  },
+  {
+   "id": "c31",
+   "km": "ហ",
+   "rom": "hâ",
+   "series": "a"
+  },
+  {
+   "id": "c32",
+   "km": "ឡ",
+   "rom": "lâ",
+   "series": "a"
+  },
+  {
+   "id": "c33",
+   "km": "អ",
+   "rom": "â",
+   "series": "a"
+  }
+ ],
+ "vowels": [
+  {
+   "id": "v01",
+   "km": "កា",
+   "rom": "kaa"
+  },
+  {
+   "id": "v02",
+   "km": "កិ",
+   "rom": "ke"
+  },
+  {
+   "id": "v03",
+   "km": "កី",
+   "rom": "kei"
+  },
+  {
+   "id": "v04",
+   "km": "កុ",
+   "rom": "ko"
+  },
+  {
+   "id": "v05",
+   "km": "កូ",
+   "rom": "kou"
+  },
+  {
+   "id": "v06",
+   "km": "កេ",
+   "rom": "kee"
+  },
+  {
+   "id": "v07",
+   "km": "កែ",
+   "rom": "kae"
+  },
+  {
+   "id": "v08",
+   "km": "កៃ",
+   "rom": "kai"
+  },
+  {
+   "id": "v09",
+   "km": "កោ",
+   "rom": "kao"
+  },
+  {
+   "id": "v10",
+   "km": "កៅ",
+   "rom": "kau"
+  },
+  {
+   "id": "v11",
+   "km": "កំ",
+   "rom": "kom"
+  },
+  {
+   "id": "v12",
+   "km": "កះ",
+   "rom": "kah"
+  }
+ ],
+ "culture": [
+  {
+   "title": "The sampeah greeting",
+   "text": "Press your palms together and bow slightly. The higher your hands, the more respect: chest height for friends, chin or nose height for elders, forehead for monks."
+  },
+  {
+   "title": "Family words replace \"you\"",
+   "text": "People rarely say \"you\". They use family terms instead, even with strangers: bong for someone a bit older, p'oun for someone younger, yeay and taa for elderly women and men."
+  },
+  {
+   "title": "\"Have you eaten?\"",
+   "text": "Nham baay nov? is a warm everyday greeting, like asking how someone is. A simple \"nham haey\" (I've eaten) is a fine answer."
+  },
+  {
+   "title": "Respect for elders",
+   "text": "Speak softly to elders, let them eat first, and hand things over with both hands (or your right hand with your left touching your arm)."
+  },
+  {
+   "title": "Head and feet",
+   "text": "The head is considered sacred, so don't touch anyone's head, even a child's. Feet are the lowest part of the body: don't point them at people or at a Buddha image."
+  },
+  {
+   "title": "Shoes off inside",
+   "text": "Take your shoes off before entering a home, and at temples."
+  },
+  {
+   "title": "Khmer New Year",
+   "text": "Choul Chnam Thmey is celebrated for three days in mid-April, with family visits, temple offerings, splashing water, and traditional games."
+  },
+  {
+   "title": "Pchum Ben",
+   "text": "A 15-day festival around September or October to honor ancestors. Families bring food to the pagoda for monks and for the spirits of relatives who have passed."
+  },
+  {
+   "title": "Water Festival",
+   "text": "Bon Om Touk, usually in November, celebrates the end of the rainy season with dragon-boat races on the river."
+  }
+ ]
+}
 </script>
 <script>
 const main = document.getElementById('main');
+const DATA = JSON.parse(document.getElementById('data').textContent);
+const LESSONS = DATA.lessons;
+const BY_ID = {};
+[...LESSONS.flatMap(l => l.items), ...DATA.consonants, ...DATA.vowels].forEach(it => BY_ID[it.id] = it);
 const DAY = 864e5, GAPS = [0, 1, 3, 7, 14, 30, 90]; // review gap in days per box
-let LESSONS = [], BY_ID = {};
 let srs = load('srs', {});   // id -> {box, due}
 let done = load('done', []); // finished lesson indexes
 let voice = load('voice', 'f');
@@ -145,6 +1165,7 @@ let voice = load('voice', 'f');
 function load(k, d) { try { return JSON.parse(localStorage.getItem('km-' + k)) ?? d; } catch { return d; } }
 function save(k, v) { try { localStorage.setItem('km-' + k, JSON.stringify(v)); } catch {} }
 const shuffle = a => a.map(x => [Math.random(), x]).sort((p, q) => p[0] - q[0]).map(p => p[1]);
+const $ = id => document.getElementById(id);
 
 function play(item) {
   const a = new Audio(`audio/${item.id}-${voice}.mp3`);
@@ -160,31 +1181,56 @@ function phraseHTML(it) {
     (it.note ? `<div class="note">${it.note}</div>` : '');
 }
 
+// ---- Home ----
+function home() {
+  const next = LESSONS.findIndex((_, i) => !done.includes(i));
+  const start = done.length && next >= 0
+    ? `<button class="btn primary" id="cont">Continue: Day ${next + 1}</button>`
+    : `<a class="btn primary" href="#lessons">Start learning</a>`;
+  const features = [
+    ['lessons', 'Daily lessons', `${LESSONS.length} short lessons from beginner to advanced, built around real family conversation.`],
+    ['alphabet', 'Khmer alphabet', 'All 33 consonants and the common vowels, each with audio.'],
+    ['review', 'Smart review', 'Flashcards come back right before you would forget them.'],
+    ['quiz', 'Listening quiz', 'Hear a phrase and pick what it means.'],
+    ['games', 'Word games', 'Quick matching games for phrases and letters.'],
+    ['culture', 'Culture notes', 'Greetings, respect, family words and holidays.'],
+  ];
+  main.innerHTML = `<section class="hero"><div class="kh">សួស្តី</div>
+    <h2>Speak Khmer with your family</h2>
+    <p>Short daily lessons, real pronunciation, and practice that sticks. Free, no account needed.</p>
+    <div class="row">${start}<a class="btn" href="#alphabet">Learn the alphabet</a></div></section>
+    <div class="features">${features.map(([v, t, d]) => `<a class="card" href="#${v}"><b>${t}</b><span>${d}</span></a>`).join('')}</div>`;
+  if ($('cont')) $('cont').onclick = () => lesson(next);
+}
+
 // ---- Lessons ----
 function lessons() {
-  main.innerHTML = `<p class="hint">One lesson a day, then clear your reviews. Say every phrase out loud.</p>` +
-    LESSONS.map((l, i) => {
-      const locked = i > 0 && !done.includes(i - 1);
-      const status = done.includes(i) ? '✓ done' : locked ? '🔒' : `${l.items.length} phrases`;
-      return `<button class="lesson" data-i="${i}" ${locked ? 'disabled' : ''}><b>Day ${i + 1}: ${l.title}</b><span>${status}</span></button>`;
-    }).join('');
+  let html = `<div class="narrow"><p class="hint">One lesson a day, then clear your reviews. Say every phrase out loud.</p>`, level;
+  LESSONS.forEach((l, i) => {
+    if (l.level !== level) { level = l.level; html += `<h3 class="level">${level}</h3>`; }
+    const locked = i > 0 && !done.includes(i - 1);
+    const status = done.includes(i) ? '✓ done' : locked ? '🔒' : `${l.items.length} phrases`;
+    html += `<button class="lesson" data-i="${i}" ${locked ? 'disabled' : ''}><b>Day ${i + 1}: ${l.title}</b><span>${status}</span></button>`;
+  });
+  main.innerHTML = html + '</div>';
   main.querySelectorAll('.lesson').forEach(b => b.onclick = () => lesson(+b.dataset.i));
 }
 
 function lesson(i) {
   const l = LESSONS[i];
-  main.innerHTML = `<h2>Day ${i + 1}: ${l.title}</h2><p class="hint">Play, repeat out loud, then record yourself to compare.</p>` +
+  main.innerHTML = `<div class="narrow"><h2>Day ${i + 1}: ${l.title}</h2><p class="hint">${l.level}. Play, repeat out loud, then record yourself to compare.</p>` +
     l.items.map(it => `<div class="card">${phraseHTML(it)}
       <div class="row"><button class="btn" data-play="${it.id}">▶ Play</button>
       <button class="btn" data-rec="${it.id}">🎙 Record</button><span id="out-${it.id}"></span></div></div>`).join('') +
-    `<button class="btn primary" id="finish">Finish lesson → review</button>`;
+    `<button class="btn primary" id="finish">Finish lesson → review</button></div>`;
   main.querySelectorAll('[data-play]').forEach(b => b.onclick = () => play(BY_ID[b.dataset.play]));
   main.querySelectorAll('[data-rec]').forEach(b => b.onclick = () => record(BY_ID[b.dataset.rec], b));
-  document.getElementById('finish').onclick = () => {
+  $('finish').onclick = () => {
     if (!done.includes(i)) done.push(i);
     l.items.forEach(it => srs[it.id] ??= { box: 0, due: 0 });
-    save('done', done); save('srs', srs); show('review');
+    save('done', done); save('srs', srs); location.hash = 'review';
   };
+  scrollTo(0, 0);
 }
 
 // ---- Listen & repeat ----
@@ -202,7 +1248,7 @@ async function record(item, btn) {
       const mine = document.createElement('audio');
       mine.controls = true;
       mine.src = URL.createObjectURL(new Blob(chunks, { type: rec.mimeType }));
-      document.getElementById('out-' + item.id).replaceChildren(mine);
+      $('out-' + item.id).replaceChildren(mine);
       play(item).onended = () => mine.play(); // native speaker first, then you
     };
     rec.start();
@@ -212,27 +1258,43 @@ async function record(item, btn) {
   }
 }
 
+// ---- Alphabet ----
+function alphabet(tab = 'c') {
+  const list = tab === 'c' ? DATA.consonants : DATA.vowels;
+  const hint = tab === 'c'
+    ? 'Tap a letter to hear it. Each consonant belongs to a series: <b>a-series</b> (white) has a higher "â" sound, <b>o-series</b> (shaded) a lower "ô" sound. The series changes how the vowel after it sounds.'
+    : 'Vowels attach to a consonant. Here they are shown on ក (kâ). After an o-series consonant, most vowels sound different.';
+  main.innerHTML = `<div class="row" style="margin-top:0">
+      <button class="btn ${tab === 'c' ? 'primary' : ''}" data-t="c">Consonants (33)</button>
+      <button class="btn ${tab === 'v' ? 'primary' : ''}" data-t="v">Vowels</button></div>
+    <p class="hint">${hint}</p>
+    <div class="grid">${list.map(x => `<button class="tile ${x.series === 'o' ? 'o' : ''}" data-id="${x.id}">
+      <span class="glyph">${x.km}</span><span>${x.rom}</span>${x.series ? `<small>${x.series}-series</small>` : ''}</button>`).join('')}</div>`;
+  main.querySelectorAll('[data-t]').forEach(b => b.onclick = () => alphabet(b.dataset.t));
+  main.querySelectorAll('.tile').forEach(b => b.onclick = () => play(BY_ID[b.dataset.id]));
+}
+
 // ---- Review (spaced repetition) ----
 function review() {
-  const queue = shuffle(Object.keys(srs).filter(id => srs[id].due <= Date.now()));
+  const queue = shuffle(Object.keys(srs).filter(id => srs[id].due <= Date.now() && BY_ID[id]));
   const next = () => {
     if (!queue.length) {
-      main.innerHTML = `<div class="card big"><div class="rom">All caught up 🎉</div>
+      main.innerHTML = `<div class="card big narrow"><div class="rom">All caught up 🎉</div>
         <p class="hint">${Object.keys(srs).length ? 'Come back tomorrow, or start the next lesson.' : 'Finish a lesson to get cards to review.'}</p></div>`;
       return;
     }
     const it = BY_ID[queue[0]];
-    main.innerHTML = `<p class="hint">${queue.length} left. Say it in Khmer, then reveal.</p>
+    main.innerHTML = `<div class="narrow"><p class="hint">${queue.length} left. Say it in Khmer, then reveal.</p>
       <div class="card big"><div class="rom">${it.en}</div><div id="ans"></div>
-      <div class="row" style="justify-content:center"><button class="btn primary" id="reveal">Reveal</button></div></div>`;
-    document.getElementById('reveal').onclick = () => {
-      document.getElementById('ans').innerHTML = `<hr>${phraseHTML(it).replace(`<div class="en">${it.en}</div>`, '')}`;
+      <div class="row" style="justify-content:center"><button class="btn primary" id="reveal">Reveal</button></div></div></div>`;
+    $('reveal').onclick = () => {
+      $('ans').innerHTML = `<hr><div class="rom">${it.rom}</div><div class="km">${it.km}</div>`;
       play(it);
-      document.getElementById('reveal').parentElement.innerHTML =
+      $('reveal').parentElement.innerHTML =
         `<button class="btn" id="rep">▶</button><button class="btn bad" id="again">Again</button><button class="btn ok" id="good">Got it</button>`;
-      document.getElementById('rep').onclick = () => play(it);
-      document.getElementById('again').onclick = () => { grade(it.id, false); queue.push(queue.shift()); next(); };
-      document.getElementById('good').onclick = () => { grade(it.id, true); queue.shift(); next(); };
+      $('rep').onclick = () => play(it);
+      $('again').onclick = () => { grade(it.id, false); queue.push(queue.shift()); next(); };
+      $('good').onclick = () => { grade(it.id, true); queue.shift(); next(); };
     };
   };
   next();
@@ -244,21 +1306,24 @@ function grade(id, ok) {
   save('srs', srs);
 }
 
+const learned = () => Object.keys(srs).map(id => BY_ID[id]).filter(it => it?.en);
+
 // ---- Listening quiz ----
 function quiz() {
-  const pool = Object.keys(srs).map(id => BY_ID[id]).filter(Boolean);
+  const pool = learned();
   if (pool.length < 4) {
-    main.innerHTML = `<div class="card big"><p class="hint">Finish your first lesson to unlock the quiz.</p></div>`;
+    main.innerHTML = `<div class="card big narrow"><p class="hint">Finish your first lesson to unlock the quiz.</p></div>`;
     return;
   }
   let right = 0, total = 0;
   const ask = () => {
+    if (location.hash !== '#quiz') return; // left the page while waiting
     const it = pool[Math.floor(Math.random() * pool.length)];
     const opts = shuffle([it, ...shuffle(pool.filter(p => p !== it)).slice(0, 3)]);
-    main.innerHTML = `<p class="hint">Score: ${right}/${total}. Listen and pick the meaning.</p>
-      <div class="card big"><button class="btn primary" id="hear">▶ Play again</button></div>
-      <div class="opts">${opts.map(o => `<button class="btn" data-id="${o.id}">${o.en}</button>`).join('')}</div>`;
-    document.getElementById('hear').onclick = () => play(it);
+    main.innerHTML = `<div class="narrow"><p class="hint">Score: ${right}/${total}. Listen and pick the meaning.</p>
+      <div class="card big"><button class="btn primary" id="hear">▶ Play again</button><div id="reveal"></div></div>
+      <div class="opts">${opts.map(o => `<button class="btn" data-id="${o.id}">${o.en}</button>`).join('')}</div></div>`;
+    $('hear').onclick = () => play(it);
     play(it);
     main.querySelectorAll('.opts .btn').forEach(b => b.onclick = () => {
       total++;
@@ -266,27 +1331,70 @@ function quiz() {
       if (ok) right++;
       main.querySelectorAll('.opts .btn').forEach(x => { x.disabled = true; if (x.dataset.id === it.id) x.classList.add('ok'); });
       if (!ok) b.classList.add('bad');
-      document.getElementById('hear').parentElement.innerHTML += `<div style="margin-top:12px">${phraseHTML(it)}</div>`;
+      $('reveal').innerHTML = `<div style="margin-top:12px">${phraseHTML(it)}</div>`;
       setTimeout(ask, ok ? 1200 : 3000);
     });
   };
   ask();
 }
 
-// ---- Nav ----
-const VIEWS = { lessons, review, quiz };
-function show(v) {
-  document.querySelectorAll('nav button').forEach(b => b.classList.toggle('on', b.dataset.v === v));
-  VIEWS[v]();
+// ---- Matching game ----
+function games(mode = 'phrases') {
+  const phrases = learned().length >= 5 ? learned() : LESSONS[0].items;
+  const pairs = mode === 'letters'
+    ? shuffle(DATA.consonants).slice(0, 5).map(c => ({ it: c, a: `<span class="glyph">${c.km}</span>`, b: c.rom }))
+    : shuffle(phrases).slice(0, 5).map(p => ({ it: p, a: p.rom, b: p.en }));
+  const tiles = side => shuffle(pairs).map(p => `<button class="tile" data-side="${side}" data-id="${p.it.id}">${side === 'a' ? p.a : p.b}</button>`);
+  const left = tiles('a'), right = tiles('b');
+  main.innerHTML = `<div class="narrow"><div class="row" style="margin-top:0">
+      <button class="btn ${mode === 'phrases' ? 'primary' : ''}" data-m="phrases">Phrases</button>
+      <button class="btn ${mode === 'letters' ? 'primary' : ''}" data-m="letters">Letters</button></div>
+    <p class="hint">Tap one on each side to match them. ${mode === 'phrases' && learned().length < 5 ? 'Using Day 1 words until you finish a lesson.' : ''}</p>
+    <div class="match">${left.map((l, i) => l + right[i]).join('')}</div><div id="win"></div></div>`;
+  main.querySelectorAll('[data-m]').forEach(b => b.onclick = () => games(b.dataset.m));
+  let sel = null, matched = 0;
+  main.querySelectorAll('.match .tile').forEach(t => t.onclick = () => {
+    if (t.classList.contains('done')) return;
+    if (!sel || sel.dataset.side === t.dataset.side) {
+      sel?.classList.remove('sel');
+      sel = t; t.classList.add('sel');
+      return;
+    }
+    if (sel.dataset.id === t.dataset.id) {
+      [sel, t].forEach(x => { x.classList.remove('sel'); x.classList.add('done'); });
+      play(BY_ID[t.dataset.id]);
+      if (++matched === pairs.length) {
+        $('win').innerHTML = `<div class="card big"><div class="rom">Nice! 🎉</div><button class="btn primary" id="again">Play again</button></div>`;
+        $('again').onclick = () => games(mode);
+      }
+    } else {
+      const s = sel;
+      [s, t].forEach(x => x.classList.add('wrong'));
+      setTimeout(() => [s, t].forEach(x => x.classList.remove('wrong', 'sel')), 500);
+    }
+    sel = null;
+  });
 }
-document.querySelectorAll('nav button').forEach(b => b.onclick = () => show(b.dataset.v));
-const sel = document.getElementById('voice');
+
+// ---- Culture ----
+function culture() {
+  main.innerHTML = `<div class="narrow"><p class="hint">Small things that matter when you speak with family.</p>` +
+    DATA.culture.map(c => `<div class="card"><b>${c.title}</b><p style="margin:6px 0 0">${c.text}</p></div>`).join('') + '</div>';
+}
+
+// ---- Router ----
+const VIEWS = { home, lessons, alphabet, review, quiz, games, culture };
+function route() {
+  const v = VIEWS[location.hash.slice(1)] ? location.hash.slice(1) : 'home';
+  document.querySelectorAll('nav a').forEach(a => a.classList.toggle('on', a.getAttribute('href') === '#' + v));
+  VIEWS[v]();
+  scrollTo(0, 0);
+}
+addEventListener('hashchange', route);
+const sel = $('voice');
 sel.value = voice;
 sel.onchange = () => { voice = sel.value; save('voice', voice); };
-
-LESSONS = JSON.parse(document.getElementById('phrases').textContent);
-LESSONS.forEach(l => l.items.forEach(it => BY_ID[it.id] = it));
-show('lessons');
+route();
 </script>
 </body>
 </html>
