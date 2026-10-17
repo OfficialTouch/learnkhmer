@@ -225,15 +225,16 @@ export default {
         // Whole message: English parts in an English voice, Khmer parts in Sreymom, stitched in order.
         const segs = splitVoices(text);
         if (!segs.length) return json({ error: 'No text' }, 400);
-        try {
-          const parts = [];
-          for (let i = 0; i < segs.length; i += 4) { // a few at a time to stay polite to the service
-            parts.push(...await Promise.all(segs.slice(i, i + 4).map(g =>
-              edgeTTS(g.text, g.km ? 'km-KH-SreymomNeural' : 'en-US-JennyNeural', g.km ? '-10%' : '+0%'))));
+        // One piece at a time (the service refuses parallel requests from Cloudflare), retry once, skip if still failing.
+        const parts = [];
+        for (const g of segs) {
+          for (let attempt = 0; attempt < 2; attempt++) {
+            try { parts.push(await edgeTTS(g.text, g.km ? 'km-KH-SreymomNeural' : 'en-US-JennyNeural', g.km ? '-10%' : '+0%')); break; }
+            catch (e) { console.log(`voice piece failed (${attempt + 1}/2):`, e.message, JSON.stringify(g.text.slice(0, 40))); }
           }
-          return audio(new Blob(parts));
-        } catch (e) { console.log('full voice failed:', e.message); }
-        text = segs.filter(g => g.km).map(g => g.text).join(' '); // fall back to the Khmer parts only
+        }
+        if (parts.length) return audio(new Blob(parts));
+        text = segs.filter(g => g.km).map(g => g.text).join(' '); // nothing worked: try the Khmer parts below
         if (!text) return json({ error: 'Voice unavailable' }, 502);
       }
       if (!env.AZURE_SPEECH_KEY || !env.AZURE_SPEECH_REGION) {
