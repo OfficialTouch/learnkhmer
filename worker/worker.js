@@ -1,7 +1,9 @@
 // Khmer tutor server for the Learn Khmer site. It keeps your API keys secret.
 // Deploy as a Cloudflare Worker, then add these as Secrets under Settings → Variables and Secrets:
 //   ANTHROPIC_API_KEY, PASSWORD
-// Optional, for the Sreymom voice instead of the free Google voice: AZURE_SPEECH_KEY, AZURE_SPEECH_REGION (e.g. eastus)
+// Optional, for the Sreymom voice instead of the free Google voice (pick one):
+//   VOICE_URL = your free Hugging Face Space address (see voice-server/), e.g. https://yourname-khmer-voice.hf.space
+//   AZURE_SPEECH_KEY + AZURE_SPEECH_REGION (e.g. eastus)
 const ALLOWED_ORIGIN = 'https://officialtouch.github.io';
 const MODEL = 'claude-sonnet-5-5';
 
@@ -54,9 +56,20 @@ export default {
     if (body.mode === 'tts') {
       const text = String(body.text || '').slice(0, 500);
       if (!text) return json({ error: 'No text' }, 400);
+      const audio = b => new Response(b, { headers: { ...cors, 'content-type': 'audio/mpeg' } });
+      if (env.VOICE_URL && !(env.AZURE_SPEECH_KEY && env.AZURE_SPEECH_REGION)) {
+        // Free Sreymom voice from your Hugging Face Space (voice-server/). If it's asleep or down, use Google below.
+        try {
+          const r = await fetch(env.VOICE_URL.replace(/\/+$/, '') + '/tts', {
+            method: 'POST', headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ text, password: env.PASSWORD }),
+          });
+          if (r.ok) return audio(r.body);
+        } catch {}
+      }
       if (!env.AZURE_SPEECH_KEY || !env.AZURE_SPEECH_REGION) {
         // Free fallback: Google Translate's Khmer voice. It takes short pieces, so split and join the MP3s.
-        // shortcut: unofficial endpoint, may stop working; add the Azure secrets to switch to Sreymom.
+        // shortcut: unofficial endpoint, lower quality and may stop working; VOICE_URL or Azure gives Sreymom.
         const parts = [];
         for (const piece of chunk(text)) {
           const r = await fetch(`https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=km&q=${encodeURIComponent(piece)}`,
@@ -64,7 +77,7 @@ export default {
           if (!r.ok) return json({ error: `Voice service error ${r.status}` }, 502);
           parts.push(await r.arrayBuffer());
         }
-        return new Response(new Blob(parts), { headers: { ...cors, 'content-type': 'audio/mpeg' } });
+        return audio(new Blob(parts));
       }
       const ssml = `<speak version="1.0" xml:lang="km-KH"><voice name="km-KH-SreymomNeural"><prosody rate="-10%">${xmlEscape(text)}</prosody></voice></speak>`;
       const r = await fetch(`https://${env.AZURE_SPEECH_REGION}.tts.speech.microsoft.com/cognitiveservices/v1`, {
@@ -78,7 +91,7 @@ export default {
         body: ssml,
       });
       if (!r.ok) return json({ error: `Speech service error ${r.status}` }, 502);
-      return new Response(r.body, { headers: { ...cors, 'content-type': 'audio/mpeg' } });
+      return audio(r.body);
     }
 
     const system = PROMPTS[body.mode];

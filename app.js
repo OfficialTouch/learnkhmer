@@ -38,6 +38,7 @@ function playSeq(items) {
 const ttsCache = new Map();
 const khmerOnly = t => (t.match(/[ក-៿᧠-᧿][ក-៿᧠-᧿\s?!.,…]*/g) || []).join(' ').trim();
 let kmVoice = null, serverVoiceOff = false;
+let ttsSpeed = load('ttsspeed', 0.8); // tutor voice speed (1 = normal)
 const findVoice = () => {
   kmVoice = (window.speechSynthesis?.getVoices() || []).filter(v => /^km/i.test(v.lang))
     .sort((a, b) => /sreymom/i.test(b.name) - /sreymom/i.test(a.name))[0] || null;
@@ -47,7 +48,7 @@ findVoice();
 function browserSpeak(km) {
   if (!kmVoice) return false;
   const u = new SpeechSynthesisUtterance(km);
-  u.voice = kmVoice; u.lang = kmVoice.lang; u.rate = 0.9;
+  u.voice = kmVoice; u.lang = kmVoice.lang; u.rate = ttsSpeed;
   speechSynthesis.cancel(); speechSynthesis.speak(u);
   return true;
 }
@@ -62,7 +63,9 @@ async function speak(text) {
         if (!r.ok) throw new Error(r.status);
         ttsCache.set(km, URL.createObjectURL(await r.blob()));
       }
-      await new Audio(ttsCache.get(km)).play();
+      const a = new Audio(ttsCache.get(km));
+      a.playbackRate = ttsSpeed; // browsers keep the pitch natural when slowed
+      await a.play();
       return true;
     } catch { serverVoiceOff = true; } // no voice key on the server: stop asking it this visit
   }
@@ -480,6 +483,7 @@ function tutorPage() {
   view.innerHTML = `<div class="narrow"><div class="row" style="margin-top:0;justify-content:space-between">
       <h2 style="margin:0">AI Tutor</h2>
       <span><label class="hint"><input type="checkbox" id="auto" ${autoSpeak ? 'checked' : ''} style="width:auto"> Speak replies</label>
+      <select id="speed" aria-label="Voice speed">${[[0.6, 'Slowest'], [0.8, 'Slow'], [1, 'Normal']].map(([v, l]) => `<option value="${v}" ${v === ttsSpeed ? 'selected' : ''}>${l}</option>`).join('')}</select>
       <button class="btn sm" id="clear">New chat</button> <button class="btn sm" id="gear" aria-label="Settings">⚙</button></span></div>
     <p class="hint">Ask anything in English or Khmer. Your teacher answers with Khmer script, romanization and English, and speaks the Khmer out loud.</p>
     ${kmVoice ? '' : '<p class="card hint">🔈 This browser has no Khmer voice, so replies will be silent. Open this site in <b>Microsoft Edge</b> to hear Sreymom for free.</p>'}
@@ -517,6 +521,7 @@ function tutorPage() {
   input.onkeydown = e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(input.value); } };
   $('chips').querySelectorAll('button').forEach(b => b.onclick = () => send(b.textContent));
   $('auto').onchange = e => { autoSpeak = e.target.checked; save('autospeak', autoSpeak); };
+  $('speed').onchange = e => { ttsSpeed = +e.target.value; save('ttsspeed', ttsSpeed); };
   $('clear').onclick = () => { chatLog = []; save('chat', chatLog); render(); };
   $('gear').onclick = () => tutorSettings(view, tutorPage);
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
