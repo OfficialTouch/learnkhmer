@@ -1,0 +1,21 @@
+name: Generate audio
+on:
+  push:
+    paths: [index.html, gen_audio.py]
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  audio:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install edge-tts && python gen_audio.py
+      - run: |
+          git config user.name github-actions
+          git config user.email github-actions@users.noreply.github.com
+          git add audio
+          git diff --cached --quiet || (git commit -m "Generate audio" && git push)
