@@ -15,7 +15,7 @@ Live at https://officialtouch.github.io/learnkhmer/
 
 ## Files
 
-- `index.html`: page layout and styles
+- `index.html`: page layout and styles. After changing `app.js` or `data.js`, bump the `?v=` number on their script tags so browsers load the new copy.
 - `app.js`: all the app logic
 - `data.js`: all content (lessons, units, alphabet, verbs, culture). Edit here.
 - `gen_audio.py`: makes the MP3s in `audio/`. The **Generate audio** GitHub Action runs it automatically when `data.js` changes.
