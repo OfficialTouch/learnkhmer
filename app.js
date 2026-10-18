@@ -21,7 +21,9 @@ let srs = load('srs', {});         // id -> {box, due}
 let done = load('done', []);       // finished phrase-lesson indexes
 let passed = load('units', {});    // unit index -> best test score
 let voice = load('voice', 'f');
+const TUTOR_URL = 'https://khmer-tutor.abtouch01.workers.dev'; // public address; the password is what protects it
 let tutor = load('tutor', { url: '', pass: '' });
+if (!tutor.url) tutor.url = TUTOR_URL;
 let view = main;                   // where the current page renders (sub-tabs swap it)
 
 function load(k, d) { try { return JSON.parse(localStorage.getItem('km-' + k)) ?? d; } catch { return d; } }
@@ -66,7 +68,7 @@ async function speak(text, full = false) {
   const km = khmerOnly(text);
   if (!km && !full) return false;
   const say = full ? text : km, key = (full ? 'full:' : '') + say;
-  if (tutor.url) {
+  if (tutor.pass) {
     try {
       if (!ttsCache.has(key)) {
         const r = await fetch(tutor.url, { method: 'POST', headers: { 'content-type': 'application/json' },
@@ -577,13 +579,15 @@ function games(mode = 'phrases') {
 let chatLog = load('chat', []);
 let autoSpeak = load('autospeak', true);
 function tutorSettings(box, after) {
-  box.innerHTML = `<div class="card"><h3 style="margin-top:0">Connect your tutor</h3>
-    <p class="hint">Paste the server address from your Cloudflare worker and your password. These stay on this device only.</p>
-    <label>Server address<input id="turl" placeholder="https://khmer-tutor.yourname.workers.dev" value="${esc(tutor.url)}"></label>
-    <label style="display:block;margin-top:10px">Password<input id="tpass" type="password" value="${esc(tutor.pass)}"></label>
+  box.innerHTML = `<div class="card"><div class="row" style="margin-top:0;justify-content:space-between"><h3 style="margin:0">Sign in to the tutor</h3>
+    ${box === panel ? '<button class="btn sm" id="tclose2" aria-label="Close">✕</button>' : ''}</div>
+    <p class="hint">Enter your tutor password. It's saved on this device so you only do this once.</p>
+    <label style="display:block">Password<input id="tpass" type="password" autocomplete="current-password" value="${esc(tutor.pass)}"></label>
+    <details style="margin-top:10px"><summary class="hint">Server address</summary><input id="turl" value="${esc(tutor.url)}"></details>
     <div class="row"><button class="btn primary" id="tsave">Save</button></div></div>`;
+  box.querySelector('#tclose2')?.addEventListener('click', closeTutor);
   box.querySelector('#tsave').onclick = () => {
-    tutor = { url: box.querySelector('#turl').value.trim(), pass: box.querySelector('#tpass').value };
+    tutor = { url: box.querySelector('#turl').value.trim() || TUTOR_URL, pass: box.querySelector('#tpass').value };
     save('tutor', tutor); after();
   };
 }
@@ -608,14 +612,14 @@ fab.onclick = openTutor;
 const tutorPage = () => { closeTutor(); tutorView(main); };
 
 function tutorView(root) {
-  if (!tutor.url) return tutorSettings(root, () => tutorView(root));
+  if (!tutor.pass) return tutorSettings(root, () => tutorView(root));
   const inBox = root === panel;
   const q = sel => root.querySelector(sel); // look up inside this view only
   const chips = ['How do I say "I love you, Mom"?', "Let's practice greeting my partner's parents", 'Quiz me on numbers', 'Teach me how to order food'];
   root.innerHTML = `<div class="tut ${inBox ? 'box' : 'narrow'}">
     <div class="tut-head"><div class="row" style="margin-top:0;justify-content:space-between">
       <b style="font-size:${inBox ? 17 : 24}px">AI Tutor</b>
-      <span>${inBox ? '<a class="btn sm" href="#tutor" title="Open full page">⤢</a> <button class="btn sm" id="tclose" aria-label="Collapse">–</button>' : ''}</span></div>
+      <span>${inBox ? '<a class="btn sm" href="#tutor" title="Open full page">⤢</a> <button class="btn sm" id="tclose" aria-label="Close">✕</button>' : ''}</span></div>
       <div class="row" style="margin-top:6px">
         <label class="hint"><input type="checkbox" id="auto" ${autoSpeak ? 'checked' : ''} style="width:auto"> Speak</label>
         <select id="speed" aria-label="Voice speed">${[[0.6, 'Slowest'], [0.8, 'Slow'], [1, 'Normal']].map(([v, l]) => `<option value="${v}" ${v === ttsSpeed ? 'selected' : ''}>${l}</option>`).join('')}</select>
@@ -690,8 +694,8 @@ function tools(tab = 'translate', arg) {
 }
 
 function translate() {
-  if (!tutor.url) {
-    view.innerHTML = `<div class="card"><p>The translator uses your AI tutor server. <a href="#tutor">Connect it on the AI Tutor page</a> first.</p></div>`;
+  if (!tutor.pass) {
+    view.innerHTML = `<div class="card"><p>The translator uses your AI tutor server. <a href="#tutor">Sign in on the AI Tutor page</a> first.</p></div>`;
     return;
   }
   view.innerHTML = `<div class="card"><label>English (or Khmer)<textarea id="tin" rows="3" placeholder="e.g. Grandma, the food is delicious!"></textarea></label>
