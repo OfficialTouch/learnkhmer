@@ -6,7 +6,7 @@ root = pathlib.Path(__file__).parent
 src = (root / "data.js").read_text(encoding="utf-8")
 data = json.loads(src[src.index("{"):src.rindex("}") + 1])
 units = data["units"]
-course = [x for u in units for x in u["vocab"] + u["examples"]]
+course = [x for u in units for x in u["vocab"] + u["examples"]] + [x for t in data["grandma"] for x in t["items"]]
 items = ([i for lesson in data["lessons"] for i in lesson["items"]] + data["consonants"] + data["vowels"]
          + [x for x in course if isinstance(x, dict)] + data["subjects"] + data["markers"] + data["verbs"])
 
@@ -21,6 +21,9 @@ for u in units:
     assert all(r in known for r in refs), f"unknown id in unit {u['title']}: {[r for r in refs if r not in known]}"
     for q in u["quiz"]:
         assert 0 <= q["a"] < len(q["opts"]), q
+for t in data["grandma"]:
+    refs = [x for x in t["items"] if isinstance(x, str)]
+    assert all(r in known for r in refs), f"unknown id in grandma topic {t['title']}: {refs}"
 if "--check" in sys.argv:
     sys.exit(print(f"OK: {len(units)} units, {len(data['lessons'])} phrase lessons, {len(items)} audio items"))
 

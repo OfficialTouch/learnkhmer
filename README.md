@@ -9,6 +9,7 @@ A free web app for learning spoken Khmer (Cambodian) for everyday family convers
 - **Alphabet**: 33 consonants and common vowels with audio
 - **Practice**: spaced-repetition review, listening quiz, matching games
 - **Tools**: translator, on-screen Khmer keyboard, printable handwriting sheets
+- **Learn with Grandma**: phrases for asking Grandma to teach you, plus a printable Word sheet (`grandma-phrases.docx`, rebuilt with `npm i docx && node make_doc.js`)
 - **Culture notes**
 
 Live at https://officialtouch.github.io/learnkhmer/

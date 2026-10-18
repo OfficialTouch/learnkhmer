@@ -2673,5 +2673,178 @@ window.DATA = {
    "ing": "closing",
    "pp": "closed"
   }
+ ],
+ "grandma": [
+  {
+   "title": "Checking words I learned",
+   "intro": "Bring words from the app and let Grandma tell you how the family really says them. Use yeay (Grandma) instead of \"you\".",
+   "items": [
+    {
+     "id": "gm-question",
+     "km": "យាយ ខ្ញុំមានសំណួរ",
+     "rom": "yeay, khnhom mean samnuor",
+     "en": "Grandma, I have a question"
+    },
+    {
+     "id": "gm-online",
+     "km": "តាមអ៊ីនធឺណិត ខ្ញុំរៀនថា ពាក្យនេះមានន័យថា គេង",
+     "rom": "taam inthoeunet, khnhom rien tha peaky nih mean ney tha keng",
+     "en": "Online I learned that this word means \"sleep\"",
+     "note": "Swap in any word: say the word you learned in place of keng."
+    },
+    {
+     "id": "gm-which",
+     "km": "ប៉ុន្តែ យើងរៀនពាក្យនេះ។ មួយណាត្រូវ?",
+     "rom": "pontae yeung rien peaky nih. muoy na trov?",
+     "en": "But we learned this one. Which one is right?"
+    },
+    {
+     "id": "gm-correct",
+     "km": "នេះត្រូវទេ?",
+     "rom": "nih trov te?",
+     "en": "Is this correct?"
+    },
+    {
+     "id": "gm-said-right",
+     "km": "ខ្ញុំនិយាយត្រូវទេ?",
+     "rom": "khnhom niyeay trov te?",
+     "en": "Did I say it right?"
+    },
+    "how-say",
+    {
+     "id": "gm-slowly",
+     "km": "សូមនិយាយយឺតៗ",
+     "rom": "som niyeay yuet yuet",
+     "en": "Please say it slowly"
+    },
+    {
+     "id": "gm-again",
+     "km": "សូមនិយាយម្តងទៀត",
+     "rom": "som niyeay mdong tiet",
+     "en": "Please say it one more time"
+    }
+   ]
+  },
+  {
+   "title": "Family stories",
+   "intro": "Ask Grandma about her life. Listen for new words and write them on your printout.",
+   "items": [
+    {
+     "id": "gm-story",
+     "km": "យាយ និទានរឿងឱ្យខ្ញុំស្តាប់",
+     "rom": "yeay, nitean rueng aoy khnhom sdap",
+     "en": "Grandma, tell me a story"
+    },
+    {
+     "id": "gm-born",
+     "km": "យាយកើតនៅឯណា?",
+     "rom": "yeay kaeut nov ae na?",
+     "en": "Where were you born?"
+    },
+    {
+     "id": "gm-young",
+     "km": "កាលនៅក្មេង យាយចូលចិត្តធ្វើអ្វី?",
+     "rom": "kal nov kmeng, yeay choul chet thveu avei?",
+     "en": "When you were young, what did you like to do?"
+    },
+    {
+     "id": "gm-grandpa",
+     "km": "យាយស្គាល់តាយ៉ាងម៉េច?",
+     "rom": "yeay skoal taa yang mech?",
+     "en": "How did you meet Grandpa?"
+    },
+    {
+     "id": "gm-mom-little",
+     "km": "ប្រាប់ខ្ញុំពីម៉ែ កាលគាត់នៅតូច",
+     "rom": "prab khnhom pi mae kal koat nov touch",
+     "en": "Tell me about Mom when she was little"
+    },
+    {
+     "id": "gm-family",
+     "km": "ខ្ញុំចង់ដឹងពីគ្រួសារយើង",
+     "rom": "khnhom chang doeng pi kruosaa yeung",
+     "en": "I want to know about our family"
+    }
+   ]
+  },
+  {
+   "title": "Cooking together",
+   "intro": "The kitchen is a great classroom. Ask the name of every ingredient.",
+   "items": [
+    {
+     "id": "gm-teach-cook",
+     "km": "យាយ បង្រៀនខ្ញុំធ្វើម្ហូប",
+     "rom": "yeay, bangrien khnhom thveu mhoub",
+     "en": "Grandma, teach me to cook"
+    },
+    {
+     "id": "gm-cooking-what",
+     "km": "យាយកំពុងធ្វើម្ហូបអ្វី?",
+     "rom": "yeay kampung thveu mhoub avei?",
+     "en": "What are you cooking?"
+    },
+    {
+     "id": "gm-called",
+     "km": "នេះហៅថាអ្វី?",
+     "rom": "nih hav tha avei?",
+     "en": "What is this called?"
+    },
+    {
+     "id": "gm-help",
+     "km": "ខ្ញុំជួយបានទេ?",
+     "rom": "khnhom chuoy baan te?",
+     "en": "Can I help?"
+    },
+    {
+     "id": "gm-how-much",
+     "km": "ដាក់ប៉ុន្មាន?",
+     "rom": "dak ponman?",
+     "en": "How much do I put in?"
+    },
+    {
+     "id": "gm-smells",
+     "km": "ក្លិនឈ្ងុយណាស់",
+     "rom": "khlen chhnguy nas",
+     "en": "It smells so good"
+    },
+    "delicious"
+   ]
+  },
+  {
+   "title": "Showing love & respect",
+   "intro": "Little things that will make Grandma smile.",
+   "items": [
+    {
+     "id": "gm-love",
+     "km": "ខ្ញុំស្រលាញ់យាយ",
+     "rom": "khnhom srolanh yeay",
+     "en": "I love you, Grandma"
+    },
+    {
+     "id": "gm-thanks-teach",
+     "km": "អរគុណដែលបានបង្រៀនខ្ញុំ",
+     "rom": "arkun dael baan bangrien khnhom",
+     "en": "Thank you for teaching me"
+    },
+    {
+     "id": "gm-learning-for",
+     "km": "ខ្ញុំរៀនភាសាខ្មែរ ដើម្បីនិយាយជាមួយយាយ",
+     "rom": "khnhom rien phiasa khmae daembei niyeay chea muoy yeay",
+     "en": "I'm learning Khmer so I can talk with you"
+    },
+    {
+     "id": "gm-rest",
+     "km": "យាយហត់ទេ? សូមសម្រាក",
+     "rom": "yeay hot te? som samrak",
+     "en": "Are you tired? Please rest"
+    },
+    {
+     "id": "gm-visit",
+     "km": "ខ្ញុំនឹងមកលេងយាយទៀត",
+     "rom": "khnhom nueng mok leng yeay tiet",
+     "en": "I'll come visit you again"
+    }
+   ]
+  }
  ]
 };

@@ -5,6 +5,7 @@ const register = list => list.forEach(x => { if (typeof x === 'object') BY_ID[x.
 register(LESSONS.flatMap(l => l.items));
 [DATA.consonants, DATA.vowels, DATA.subjects, DATA.markers, DATA.verbs].forEach(register);
 UNITS.forEach(u => { register(u.vocab); register(u.examples); });
+DATA.grandma.forEach(t => register(t.items));
 const get = x => typeof x === 'string' ? BY_ID[x] : x;
 
 const DAY = 864e5, GAPS = [0, 1, 3, 7, 14, 30, 90]; // review gap in days per box
@@ -109,6 +110,7 @@ function home() {
     ['alphabet', 'Alphabet', 'All 33 consonants and common vowels, each with audio.'],
     ['practice/cards', 'Flashcards & practice', 'Flip through any word set, plus smart review, a listening quiz and matching games.'],
     ['tools', 'Tools', 'Translator, Khmer keyboard and printable handwriting sheets.'],
+    ['grandma', 'Learn with Grandma', 'Phrases to ask Grandma so she can teach you, plus a printable sheet.'],
     ['culture', 'Culture notes', 'Greetings, respect, family words and holidays.'],
   ];
   view.innerHTML = `<section class="hero"><div class="kh">សួស្តី</div>
@@ -390,6 +392,7 @@ const DECKS = [
   ['mine', '⭐ My flashcards', () => myCards.map(id => BY_ID[id]).filter(Boolean)],
   ...UNITS.map((u, i) => [`u${i}`, `Unit ${i + 1}: ${u.title}`, () => unitItems(u)]),
   ...LESSONS.map((l, i) => [`p${i}`, `Phrases Day ${i + 1}: ${l.title}`, () => l.items]),
+  ...DATA.grandma.map((t, i) => [`g${i}`, `Grandma: ${t.title}`, () => t.items.map(get)]),
   ['verbs', 'Verbs', () => DATA.verbs],
   ['letters', 'Alphabet: consonants', () => DATA.consonants],
   ['vowels', 'Alphabet: vowels', () => DATA.vowels],
@@ -723,6 +726,19 @@ function sheets(arg) {
   $('print').onclick = () => print();
 }
 
+// ---- Learn with Grandma: phrases to ask her, plus a printable sheet ----
+function grandma() {
+  view.innerHTML = `<div class="narrow"><h2>Learn with Grandma</h2>
+    <p class="hint">Topics to bring to Grandma so she can teach you. Practice a phrase here, then ask her in person.
+      She's the real teacher: when she says a word differently from the app, trust her and add it to your notes.</p>
+    <a class="btn primary" href="grandma-phrases.docx" download>🖨 Download printable Word sheet</a>
+    <p class="hint">The sheet has a blank "Grandma says" column for her corrections.</p>` +
+    DATA.grandma.map(t => `<h3 class="level">${t.title}</h3><p class="hint" style="margin-top:-4px">${t.intro}</p>
+      <div class="card">${t.items.map(get).map(it => itemRow(it) + (it.note ? `<p class="note" style="margin:-6px 0 8px 52px">${it.note}</p>` : '')).join('')}</div>`).join('') +
+    '</div>';
+  wirePlay(); wireCards();
+}
+
 // ---- Culture ----
 function culture() {
   view.innerHTML = `<div class="narrow"><p class="hint">Small things that matter when you speak with family.</p>` +
@@ -730,7 +746,7 @@ function culture() {
 }
 
 // ---- Router: #page or #page/arg ----
-const VIEWS = { home, course, phrases, lessons: phrases, alphabet, verbs, practice, tutor: tutorPage, tools, culture };
+const VIEWS = { home, course, phrases, lessons: phrases, alphabet, verbs, practice, grandma, tutor: tutorPage, tools, culture };
 function route() {
   const [name, a, b] = location.hash.slice(1).split('/');
   onTutorPage = name === 'tutor';
