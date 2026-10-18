@@ -479,16 +479,26 @@ function bubble(m, i) {
   return `<div class="msg ${m.role === 'user' ? 'me' : 'ai'}">${html}${m.role === 'assistant' ? ` <button class="btn sm" data-say="${i}" aria-label="Speak">🔊</button>` : ''}</div>`;
 }
 
+// The tutor lives in a slide-out panel over any page, so a lesson or test in progress is never lost.
+const panel = $('chatpanel'), fab = $('chatfab');
+function openTutor() {
+  panel.hidden = false; fab.hidden = true;
+  if (!panel.dataset.ready) { panel.dataset.ready = 1; tutorPage(); }
+  $('say')?.focus();
+}
+function closeTutor() { panel.hidden = true; fab.hidden = false; }
+fab.onclick = openTutor;
+
 function tutorPage() {
-  if (!tutor.url) return tutorSettings(view, tutorPage);
+  if (!tutor.url) return tutorSettings(panel, tutorPage);
   const chips = ['How do I say "I love you, Mom"?', "Let's practice greeting my partner's parents", 'Quiz me on numbers', 'Teach me how to order food'];
-  view.innerHTML = `<div class="narrow"><div class="row" style="margin-top:0;justify-content:space-between">
-      <h2 style="margin:0">AI Tutor</h2>
+  panel.innerHTML = `<div><div class="row" style="margin-top:0;justify-content:space-between">
+      <h2 style="margin:0">AI Tutor</h2><button class="btn sm" id="tclose" aria-label="Close tutor">✕</button></div>
+    <div class="row" style="margin-top:4px">
       <span><label class="hint"><input type="checkbox" id="auto" ${autoSpeak ? 'checked' : ''} style="width:auto"> Speak replies</label>
       <select id="speed" aria-label="Voice speed">${[[0.6, 'Slowest'], [0.8, 'Slow'], [1, 'Normal']].map(([v, l]) => `<option value="${v}" ${v === ttsSpeed ? 'selected' : ''}>${l}</option>`).join('')}</select>
       <button class="btn sm" id="clear">New chat</button> <button class="btn sm" id="gear" aria-label="Settings">⚙</button></span></div>
-    <p class="hint">Ask anything in English or Khmer. Your teacher answers with Khmer script, romanization and English, and speaks the Khmer out loud.</p>
-    ${kmVoice ? '' : '<p class="card hint">🔈 This browser has no Khmer voice, so replies will be silent. Open this site in <b>Microsoft Edge</b> to hear Sreymom for free.</p>'}
+    <p class="hint">Ask anything in English or Khmer, any time. Your place in the lesson stays put while you chat. Replies are read out loud.</p>
     <div class="chat" id="log"></div>
     <div class="tabs" id="chips">${chips.map(c => `<button class="btn sm">${esc(c)}</button>`).join('')}</div>
     <div class="composer"><textarea id="say" placeholder="Type or tap 🎤 to talk…"></textarea>
@@ -499,7 +509,7 @@ function tutorPage() {
     log.innerHTML = chatLog.map(bubble).join('');
     log.querySelectorAll('[data-say]').forEach(b => b.onclick = () => speak(chatLog[+b.dataset.say].content, true));
     $('chips').style.display = chatLog.length ? 'none' : '';
-    scrollTo(0, document.body.scrollHeight);
+    log.lastElementChild?.scrollIntoView({ block: 'end' });
   };
   const send = async text => {
     text = text.trim();
@@ -525,7 +535,8 @@ function tutorPage() {
   $('auto').onchange = e => { autoSpeak = e.target.checked; save('autospeak', autoSpeak); };
   $('speed').onchange = e => { ttsSpeed = +e.target.value; save('ttsspeed', ttsSpeed); };
   $('clear').onclick = () => { chatLog = []; save('chat', chatLog); render(); };
-  $('gear').onclick = () => tutorSettings(view, tutorPage);
+  $('gear').onclick = () => tutorSettings(panel, tutorPage);
+  $('tclose').onclick = closeTutor;
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (!SR) { $('mic').style.display = $('micl').style.display = 'none'; return; }
   $('mic').onclick = () => {
@@ -605,16 +616,24 @@ function culture() {
 }
 
 // ---- Router: #page or #page/arg ----
-const VIEWS = { home, course, phrases, lessons: phrases, alphabet, verbs, practice, tutor: tutorPage, tools, culture };
+const VIEWS = { home, course, phrases, lessons: phrases, alphabet, verbs, practice, tools, culture };
+let lastHash = '#home';
 function route() {
   const [name, a, b] = location.hash.slice(1).split('/');
+  if (name === 'tutor') { // open the tutor panel without leaving the current page
+    openTutor();
+    history.replaceState(null, '', lastHash);
+    if (main.textContent !== 'Loading…') return;
+    return route();
+  }
+  lastHash = location.hash || '#home';
   const v = VIEWS[name] ? name : 'home';
   document.querySelectorAll('nav a').forEach(x => x.classList.toggle('on', x.getAttribute('href') === '#' + (v === 'lessons' ? 'phrases' : v)));
   view = main;
   if (v === 'tools') tools(a || 'translate', b);
   else if (v === 'practice') practice(a || 'review');
   else VIEWS[v](a);
-  if (v !== 'tutor') scrollTo(0, 0);
+  scrollTo(0, 0);
 }
 addEventListener('hashchange', route);
 const vsel = $('voice');

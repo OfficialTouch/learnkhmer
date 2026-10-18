@@ -101,6 +101,9 @@
   .sheet .srow { display:flex; gap:6px; margin-bottom:6px; break-inside:avoid; }
   .sheet .cell { flex:1; aspect-ratio:1; border:1px solid #bbb; border-radius:6px; display:flex; align-items:center; justify-content:center; font-family:'Noto Sans Khmer', sans-serif; font-size:44px; color:#000; background:#fff; }
   .sheet .cell.trace { color:#d4d4d4; }
+  #chatfab { position:fixed; right:16px; bottom:16px; z-index:20; font:inherit; font-weight:600; padding:12px 18px; border-radius:999px; border:0; background:var(--accent); color:#fff; box-shadow:0 4px 14px rgba(0,0,0,.2); cursor:pointer; }
+  #chatpanel { position:fixed; top:0; right:0; bottom:0; width:min(440px, 100%); z-index:30; overflow-y:auto; background:var(--bg); border-left:1px solid var(--line); box-shadow:-6px 0 20px rgba(0,0,0,.15); padding:12px 16px 0; }
+  #chatpanel[hidden], #chatfab[hidden] { display:none; }
   @media print {
     header, .noprint { display:none !important; }
     body, main { background:#fff; padding:0; }
@@ -129,7 +132,9 @@
   </nav>
 </header>
 <main id="main">Loading…</main>
-<script src="data.js?v=3"></script>
-<script src="app.js?v=3"></script>
+<button id="chatfab" aria-label="Open AI tutor">💬 Tutor</button>
+<aside id="chatpanel" hidden aria-label="AI tutor"></aside>
+<script src="data.js?v=4"></script>
+<script src="app.js?v=4"></script>
 </body>
 </html>
