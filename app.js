@@ -107,7 +107,7 @@ function home() {
     ['phrases', 'Phrasebook', `${LESSONS.length} daily phrase lessons from beginner to advanced.`],
     ['verbs', 'Verb tenses', 'Any verb, any person, past, present and future, with audio.'],
     ['alphabet', 'Alphabet', 'All 33 consonants and common vowels, each with audio.'],
-    ['practice', 'Practice', 'Smart flashcards, listening quiz and matching games.'],
+    ['practice/cards', 'Flashcards & practice', 'Flip through any word set, plus smart review, a listening quiz and matching games.'],
     ['tools', 'Tools', 'Translator, Khmer keyboard and printable handwriting sheets.'],
     ['culture', 'Culture notes', 'Greetings, respect, family words and holidays.'],
   ];
@@ -269,7 +269,7 @@ function phraseLesson(i) {
   view.querySelectorAll('[data-rec]').forEach(b => b.onclick = () => record(BY_ID[b.dataset.rec], b));
   $('finish').onclick = () => {
     if (!done.includes(i)) done.push(i);
-    save('done', done); addToReview(l.items); location.hash = 'practice';
+    save('done', done); addToReview(l.items); location.hash = 'practice/review';
   };
 }
 
@@ -352,12 +352,68 @@ function verbs() {
 }
 
 // ---- Practice: review, quiz, games ----
-function practice(tab = 'review') {
-  main.innerHTML = `<div class="narrow"><div class="tabs">${[['review', 'Review cards'], ['quiz', 'Listening quiz'], ['games', 'Matching game']].map(([t, l]) =>
+function practice(tab = 'cards') {
+  if (!['cards', 'review', 'quiz', 'games'].includes(tab)) tab = 'cards';
+  main.innerHTML = `<div class="narrow"><div class="tabs">${[['cards', 'Flashcards'], ['review', 'Review cards'], ['quiz', 'Listening quiz'], ['games', 'Matching game']].map(([t, l]) =>
     `<button class="btn sm ${t === tab ? 'primary' : ''}" data-p="${t}">${l}</button>`).join('')}</div><div id="sub"></div></div>`;
   main.querySelectorAll('[data-p]').forEach(b => b.onclick = () => practice(b.dataset.p));
   view = $('sub');
-  ({ review, quiz, games })[tab]();
+  ({ cards, review, quiz, games })[tab]();
+}
+
+// ---- Flashcards: browse any word set, tap to flip ----
+const DECKS = [
+  ...UNITS.map((u, i) => [`u${i}`, `Unit ${i + 1}: ${u.title}`, () => unitItems(u)]),
+  ...LESSONS.map((l, i) => [`p${i}`, `Phrases Day ${i + 1}: ${l.title}`, () => l.items]),
+  ['verbs', 'Verbs', () => DATA.verbs],
+  ['letters', 'Alphabet: consonants', () => DATA.consonants],
+  ['vowels', 'Alphabet: vowels', () => DATA.vowels],
+];
+let fc = { deck: load('fcdeck', 'u0'), dir: load('fcdir', 'km'), order: null, i: 0 };
+function cards() {
+  const box = view;
+  const deck = DECKS.find(d => d[0] === fc.deck) || DECKS[0];
+  const items = deck[2]();
+  if (!fc.order || fc.order.length !== items.length) fc.order = items.map((_, n) => n);
+  fc.i = Math.min(fc.i, items.length - 1);
+  const it = items[fc.order[fc.i]], back = it.en || 'sound: ' + it.rom;
+  const front = fc.dir === 'km' || !it.en
+    ? `<div class="kmi" style="font-size:42px;line-height:1.5">${it.km}</div>`
+    : `<div class="rom">${it.en}</div>`;
+  const reveal = fc.dir === 'km' || !it.en
+    ? `<div class="rom">${it.rom}</div><div class="en">${it.en || ''}</div>`
+    : `<div class="kmi" style="font-size:34px;line-height:1.5">${it.km}</div><div class="rom">${it.rom}</div>`;
+  box.innerHTML = `<div class="row" style="margin-top:0">
+      <select id="fcdeck" aria-label="Word set" style="flex:1;min-width:0">${DECKS.map(d => `<option value="${d[0]}" ${d === deck ? 'selected' : ''}>${d[1]}</option>`).join('')}</select></div>
+    <div class="row">
+      <button class="btn sm ${fc.dir === 'km' ? 'primary' : ''}" data-dir="km">Khmer → English</button>
+      <button class="btn sm ${fc.dir === 'en' ? 'primary' : ''}" data-dir="en">English → Khmer</button>
+      <button class="btn sm" id="fcshuf">🔀 Shuffle</button></div>
+    <button class="card big flash" id="fccard" aria-label="Flip card">
+      ${front}<div id="fcback" hidden><hr>${reveal}</div>
+      <p class="hint" id="fchint" style="margin-bottom:0">Tap to flip</p></button>
+    <div class="row" style="justify-content:space-between">
+      <button class="btn" id="fcprev" ${fc.i === 0 ? 'disabled' : ''}>← Back</button>
+      <span class="hint">${fc.i + 1} / ${items.length}</span>
+      <button class="btn" id="fcplay" aria-label="Play">▶ Hear it</button>
+      <button class="btn primary" id="fcnext" ${fc.i === items.length - 1 ? 'disabled' : ''}>Next →</button></div>
+    <p class="hint">Keyboard: Space flips, ← → move.</p>`;
+  const flip = () => { const b = $('fcback'); b.hidden = !b.hidden; $('fchint').hidden = !b.hidden; if (!b.hidden && fc.dir === 'en') play(it); };
+  const go = d => { fc.i = Math.max(0, Math.min(items.length - 1, fc.i + d)); cards(); };
+  $('fccard').onclick = flip;
+  $('fcplay').onclick = () => play(it);
+  $('fcprev').onclick = () => go(-1);
+  $('fcnext').onclick = () => go(1);
+  $('fcshuf').onclick = () => { fc.order = shuffle(fc.order); fc.i = 0; cards(); };
+  $('fcdeck').onchange = e => { fc = { ...fc, deck: e.target.value, order: null, i: 0 }; save('fcdeck', fc.deck); cards(); };
+  box.querySelectorAll('[data-dir]').forEach(b => b.onclick = () => { fc.dir = b.dataset.dir; save('fcdir', fc.dir); cards(); });
+  if (fc.dir === 'km') play(it); // hear the Khmer side right away
+  document.onkeydown = e => {
+    if (!$('fccard') || e.target.closest('input, textarea, select, #chatpanel')) return;
+    if (e.key === ' ') { e.preventDefault(); flip(); }
+    if (e.key === 'ArrowRight') go(1);
+    if (e.key === 'ArrowLeft') go(-1);
+  };
 }
 
 function review() {
@@ -631,7 +687,7 @@ function route() {
   document.querySelectorAll('nav a').forEach(x => x.classList.toggle('on', x.getAttribute('href') === '#' + (v === 'lessons' ? 'phrases' : v)));
   view = main;
   if (v === 'tools') tools(a || 'translate', b);
-  else if (v === 'practice') practice(a || 'review');
+  else if (v === 'practice') practice(a);
   else VIEWS[v](a);
   scrollTo(0, 0);
 }

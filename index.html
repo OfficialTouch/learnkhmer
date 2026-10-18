@@ -87,6 +87,8 @@
   .vrow { display:grid; grid-template-columns:1fr auto; gap:4px 12px; align-items:center; }
   .vrow .lbl { font-size:13px; color:var(--accent); text-transform:uppercase; letter-spacing:.05em; }
   .mk { color:var(--accent); font-weight:700; }
+  .flash { min-height:240px; display:flex; flex-direction:column; justify-content:center; align-items:center; cursor:pointer; margin-top:12px; }
+  .flash hr { width:60%; border:0; border-top:1px solid var(--line); }
   /* tutor */
   .chat { display:flex; flex-direction:column; gap:10px; margin-bottom:12px; }
   .msg { max-width:88%; padding:10px 14px; border-radius:14px; }
@@ -125,6 +127,7 @@
     <a href="#phrases">Phrases</a>
     <a href="#alphabet">Alphabet</a>
     <a href="#verbs">Verbs</a>
+    <a href="#practice/cards">Flashcards</a>
     <a href="#practice">Practice</a>
     <a href="#tutor">AI Tutor</a>
     <a href="#tools">Tools</a>
@@ -134,7 +137,7 @@
 <main id="main">Loading…</main>
 <button id="chatfab" aria-label="Open AI tutor">💬 Tutor</button>
 <aside id="chatpanel" hidden aria-label="AI tutor"></aside>
-<script src="data.js?v=4"></script>
-<script src="app.js?v=4"></script>
+<script src="data.js?v=5"></script>
+<script src="app.js?v=5"></script>
 </body>
 </html>
