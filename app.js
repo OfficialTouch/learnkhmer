@@ -87,7 +87,7 @@ function phraseHTML(it) {
 }
 function itemRow(it) {
   return `<div class="item"><button class="btn play" data-play="${it.id}" aria-label="Play">▶</button>
-    <div><b>${it.rom}</b><span class="km">${it.km}</span> <span class="hint">· ${it.en}</span></div></div>`;
+    <div style="flex:1"><b>${it.rom}</b><span class="km">${it.km}</span> <span class="hint">· ${it.en}</span></div>${cardBtn(it.id)}</div>`;
 }
 function wirePlay(root = view) {
   root.querySelectorAll('[data-play]').forEach(b => b.onclick = () => play(BY_ID[b.dataset.play]));
@@ -150,7 +150,7 @@ function unit(i, step = 'learn') {
       <div class="grid">${letters.map(x => `<button class="tile ${x.series === 'o' ? 'o' : ''}" data-play="${x.id}"><span class="glyph">${x.km}</span><span>${x.rom}</span></button>`).join('')}</div>
       <div class="row"><a class="btn sm" href="#tools/sheets/${i}">Print tracing sheet for these letters</a></div>
       <div class="row" style="margin-top:24px"><button class="btn primary" id="topractice">Next: practice →</button></div>`;
-    wirePlay(box);
+    wirePlay(box); wireCards(box);
     $('topractice').onclick = () => unit(i, 'practice');
   } else if (step === 'practice') {
     let right = 0, total = 0;
@@ -263,9 +263,9 @@ function phraseLesson(i) {
   view.innerHTML = `<div class="narrow"><p class="hint"><a href="#phrases">← All phrase lessons</a></p><h2>Day ${i + 1}: ${l.title}</h2><p class="hint">${l.level}. Play, repeat out loud, then record yourself to compare.</p>` +
     l.items.map(it => `<div class="card">${phraseHTML(it)}
       <div class="row"><button class="btn" data-play="${it.id}">▶ Play</button>
-      <button class="btn" data-rec="${it.id}">🎙 Record</button><span id="out-${it.id}"></span></div></div>`).join('') +
+      <button class="btn" data-rec="${it.id}">🎙 Record</button>${cardBtn(it.id)}<span id="out-${it.id}"></span></div></div>`).join('') +
     `<button class="btn primary" id="finish">Finish lesson → review</button></div>`;
-  wirePlay();
+  wirePlay(); wireCards();
   view.querySelectorAll('[data-rec]').forEach(b => b.onclick = () => record(BY_ID[b.dataset.rec], b));
   $('finish').onclick = () => {
     if (!done.includes(i)) done.push(i);
@@ -361,53 +361,94 @@ function practice(tab = 'cards') {
   ({ cards, review, quiz, games })[tab]();
 }
 
-// ---- Flashcards: browse any word set, tap to flip ----
+// ---- Flashcards: your own deck plus any word set, tap to flip, read aloud ----
+let myCards = load('mycards', []); // ids added with "+ Flashcard"
+const isMine = id => myCards.includes(id);
+function toggleCard(id) {
+  myCards = isMine(id) ? myCards.filter(x => x !== id) : [...myCards, id];
+  save('mycards', myCards);
+}
+const cardBtn = id => `<button class="btn sm addcard" data-card="${id}" aria-pressed="${isMine(id)}">${isMine(id) ? '★ In flashcards' : '＋ Flashcard'}</button>`;
+function wireCards(root = view) {
+  root.querySelectorAll('[data-card]').forEach(b => b.onclick = () => {
+    toggleCard(b.dataset.card);
+    b.outerHTML = cardBtn(b.dataset.card);
+    wireCards(root);
+  });
+}
+
+// English side spoken by the browser's own English voice (every device has one); Khmer by the Sreymom recording.
+function sayEnglish(text) {
+  if (!text || !window.speechSynthesis) return;
+  const u = new SpeechSynthesisUtterance(text.replace(/\(.*?\)/g, ''));
+  u.lang = 'en-US'; u.rate = 0.95;
+  speechSynthesis.cancel(); speechSynthesis.speak(u);
+}
+const sayKhmerThenEnglish = it => { const a = play(it); if (it.en) a.onended = () => sayEnglish(it.en); };
+
 const DECKS = [
+  ['mine', '⭐ My flashcards', () => myCards.map(id => BY_ID[id]).filter(Boolean)],
   ...UNITS.map((u, i) => [`u${i}`, `Unit ${i + 1}: ${u.title}`, () => unitItems(u)]),
   ...LESSONS.map((l, i) => [`p${i}`, `Phrases Day ${i + 1}: ${l.title}`, () => l.items]),
   ['verbs', 'Verbs', () => DATA.verbs],
   ['letters', 'Alphabet: consonants', () => DATA.consonants],
   ['vowels', 'Alphabet: vowels', () => DATA.vowels],
 ];
-let fc = { deck: load('fcdeck', 'u0'), dir: load('fcdir', 'km'), order: null, i: 0 };
+let fc = { deck: load('fcdeck', myCards.length ? 'mine' : 'u0'), dir: load('fcdir', 'km'), auto: load('fcauto', true), order: null, i: 0 };
 function cards() {
   const box = view;
   const deck = DECKS.find(d => d[0] === fc.deck) || DECKS[0];
   const items = deck[2]();
+  const picker = `<div class="row" style="margin-top:0">
+      <select id="fcdeck" aria-label="Word set" style="flex:1;min-width:0">${DECKS.map(d => `<option value="${d[0]}" ${d === deck ? 'selected' : ''}>${d[1]}${d[0] === 'mine' ? ` (${myCards.length})` : ''}</option>`).join('')}</select></div>`;
+  const wirePicker = () => $('fcdeck').onchange = e => { fc = { ...fc, deck: e.target.value, order: null, i: 0 }; save('fcdeck', fc.deck); cards(); };
+  if (!items.length) {
+    box.innerHTML = picker + `<div class="card big"><p>No cards here yet.</p>
+      <p class="hint">In the course, tap <b>＋ Flashcard</b> next to any word to add it to your deck.</p>
+      <a class="btn primary" href="#course">Go to the course</a></div>`;
+    return wirePicker();
+  }
   if (!fc.order || fc.order.length !== items.length) fc.order = items.map((_, n) => n);
-  fc.i = Math.min(fc.i, items.length - 1);
-  const it = items[fc.order[fc.i]], back = it.en || 'sound: ' + it.rom;
-  const front = fc.dir === 'km' || !it.en
-    ? `<div class="kmi" style="font-size:42px;line-height:1.5">${it.km}</div>`
-    : `<div class="rom">${it.en}</div>`;
-  const reveal = fc.dir === 'km' || !it.en
+  fc.i = Math.max(0, Math.min(fc.i, items.length - 1));
+  const it = items[fc.order[fc.i]];
+  const kmFirst = fc.dir === 'km' || !it.en;
+  const front = kmFirst ? `<div class="kmi" style="font-size:42px;line-height:1.5">${it.km}</div>` : `<div class="rom">${it.en}</div>`;
+  const reveal = kmFirst
     ? `<div class="rom">${it.rom}</div><div class="en">${it.en || ''}</div>`
     : `<div class="kmi" style="font-size:34px;line-height:1.5">${it.km}</div><div class="rom">${it.rom}</div>`;
-  box.innerHTML = `<div class="row" style="margin-top:0">
-      <select id="fcdeck" aria-label="Word set" style="flex:1;min-width:0">${DECKS.map(d => `<option value="${d[0]}" ${d === deck ? 'selected' : ''}>${d[1]}</option>`).join('')}</select></div>
-    <div class="row">
+  box.innerHTML = picker + `<div class="row">
       <button class="btn sm ${fc.dir === 'km' ? 'primary' : ''}" data-dir="km">Khmer → English</button>
       <button class="btn sm ${fc.dir === 'en' ? 'primary' : ''}" data-dir="en">English → Khmer</button>
-      <button class="btn sm" id="fcshuf">🔀 Shuffle</button></div>
+      <button class="btn sm" id="fcshuf">🔀 Shuffle</button>
+      <label class="hint"><input type="checkbox" id="fcauto" ${fc.auto ? 'checked' : ''} style="width:auto"> Read aloud</label></div>
     <button class="card big flash" id="fccard" aria-label="Flip card">
       ${front}<div id="fcback" hidden><hr>${reveal}</div>
       <p class="hint" id="fchint" style="margin-bottom:0">Tap to flip</p></button>
     <div class="row" style="justify-content:space-between">
       <button class="btn" id="fcprev" ${fc.i === 0 ? 'disabled' : ''}>← Back</button>
       <span class="hint">${fc.i + 1} / ${items.length}</span>
-      <button class="btn" id="fcplay" aria-label="Play">▶ Hear it</button>
+      <button class="btn" id="fcplay">▶ Hear it</button>
       <button class="btn primary" id="fcnext" ${fc.i === items.length - 1 ? 'disabled' : ''}>Next →</button></div>
+    <div class="row">${cardBtn(it.id)}</div>
     <p class="hint">Keyboard: Space flips, ← → move.</p>`;
-  const flip = () => { const b = $('fcback'); b.hidden = !b.hidden; $('fchint').hidden = !b.hidden; if (!b.hidden && fc.dir === 'en') play(it); };
+  // Read the side you're looking at: Khmer side = Sreymom recording, English side = English voice.
+  const readFront = () => kmFirst ? play(it) : sayEnglish(it.en);
+  const readBack = () => kmFirst ? sayEnglish(it.en) : play(it);
+  const flip = () => {
+    const b = $('fcback'); b.hidden = !b.hidden; $('fchint').hidden = !b.hidden;
+    if (!b.hidden && fc.auto) readBack();
+  };
   const go = d => { fc.i = Math.max(0, Math.min(items.length - 1, fc.i + d)); cards(); };
   $('fccard').onclick = flip;
-  $('fcplay').onclick = () => play(it);
+  $('fcplay').onclick = () => sayKhmerThenEnglish(it);
   $('fcprev').onclick = () => go(-1);
   $('fcnext').onclick = () => go(1);
   $('fcshuf').onclick = () => { fc.order = shuffle(fc.order); fc.i = 0; cards(); };
-  $('fcdeck').onchange = e => { fc = { ...fc, deck: e.target.value, order: null, i: 0 }; save('fcdeck', fc.deck); cards(); };
+  $('fcauto').onchange = e => { fc.auto = e.target.checked; save('fcauto', fc.auto); };
+  wirePicker();
   box.querySelectorAll('[data-dir]').forEach(b => b.onclick = () => { fc.dir = b.dataset.dir; save('fcdir', fc.dir); cards(); });
-  if (fc.dir === 'km') play(it); // hear the Khmer side right away
+  box.querySelector('[data-card]').onclick = () => { toggleCard(it.id); fc.order = null; cards(); };
+  if (fc.auto) readFront();
   document.onkeydown = e => {
     if (!$('fccard') || e.target.closest('input, textarea, select, #chatpanel')) return;
     if (e.key === ' ') { e.preventDefault(); flip(); }

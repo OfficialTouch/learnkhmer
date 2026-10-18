@@ -88,6 +88,8 @@
   .vrow .lbl { font-size:13px; color:var(--accent); text-transform:uppercase; letter-spacing:.05em; }
   .mk { color:var(--accent); font-weight:700; }
   .flash { min-height:240px; display:flex; flex-direction:column; justify-content:center; align-items:center; cursor:pointer; margin-top:12px; }
+  .addcard { flex:none; white-space:nowrap; }
+  .addcard[aria-pressed=true] { color:var(--accent); border-color:var(--accent); }
   .flash hr { width:60%; border:0; border-top:1px solid var(--line); }
   /* tutor */
   .chat { display:flex; flex-direction:column; gap:10px; margin-bottom:12px; }
@@ -137,7 +139,7 @@
 <main id="main">Loading…</main>
 <button id="chatfab" aria-label="Open AI tutor">💬 Tutor</button>
 <aside id="chatpanel" hidden aria-label="AI tutor"></aside>
-<script src="data.js?v=6"></script>
-<script src="app.js?v=6"></script>
+<script src="data.js?v=7"></script>
+<script src="app.js?v=7"></script>
 </body>
 </html>
