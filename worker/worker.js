@@ -35,6 +35,19 @@ const chunk = (s, n = 180) => {
   return out;
 };
 
+// Google Translate's free voice (lang 'km' or 'en'). It takes short pieces, so split and join the MP3s.
+// shortcut: unofficial endpoint, lower quality than Sreymom and may stop working.
+async function googleTTS(text, lang) {
+  const parts = [];
+  for (const piece of chunk(text)) {
+    const r = await fetch(`https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=${lang}&q=${encodeURIComponent(piece)}`,
+      { headers: { 'User-Agent': 'Mozilla/5.0' } });
+    if (!r.ok) throw new Error(`Voice service error ${r.status}`);
+    parts.push(await r.arrayBuffer());
+  }
+  return new Blob(parts);
+}
+
 const xmlEscape =s => s.replace(/[<>&'"]/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', "'": '&apos;', '"': '&quot;' }[c]));
 
 // ---- Free Sreymom voice (Microsoft Edge "Read aloud" service), ported from the edge-tts Python package v7.3.1 ----
@@ -225,13 +238,21 @@ export default {
         // Whole message: English parts in an English voice, Khmer parts in Sreymom, stitched in order.
         const segs = splitVoices(text);
         if (!segs.length) return json({ error: 'No text' }, 400);
-        // One piece at a time (the service refuses parallel requests from Cloudflare), retry once, skip if still failing.
+        // One piece at a time. Microsoft's voice first; if it refuses (it blocks Cloudflare's servers),
+        // switch to Google's free voices for the rest: English pieces in English, Khmer pieces in Khmer.
         const parts = [];
+        let useEdge = true;
         for (const g of segs) {
-          for (let attempt = 0; attempt < 2; attempt++) {
-            try { parts.push(await edgeTTS(g.text, g.km ? 'km-KH-SreymomNeural' : 'en-US-JennyNeural', g.km ? '-10%' : '+0%')); break; }
-            catch (e) { console.log(`voice piece failed (${attempt + 1}/2):`, e.message, JSON.stringify(g.text.slice(0, 40))); }
+          let clip = null;
+          if (useEdge) {
+            try { clip = await edgeTTS(g.text, g.km ? 'km-KH-SreymomNeural' : 'en-US-JennyNeural', g.km ? '-10%' : '+0%'); }
+            catch (e) { useEdge = false; console.log('edge voice failed, using Google:', e.message); }
           }
+          if (!clip) {
+            try { clip = await googleTTS(g.text, g.km ? 'km' : 'en'); }
+            catch (e) { console.log('google voice failed:', e.message, JSON.stringify(g.text.slice(0, 40))); }
+          }
+          if (clip) parts.push(clip);
         }
         if (parts.length) return audio(new Blob(parts));
         text = segs.filter(g => g.km).map(g => g.text).join(' '); // nothing worked: try the Khmer parts below
@@ -241,16 +262,8 @@ export default {
         try { return audio(await edgeTTS(text, 'km-KH-SreymomNeural', '-10%')); } catch (e) { console.log('edge voice failed:', e.message); }
       }
       if (!env.AZURE_SPEECH_KEY || !env.AZURE_SPEECH_REGION) {
-        // Backup: Google Translate's Khmer voice. It takes short pieces, so split and join the MP3s.
-        // Only used if the Sreymom voice above fails. shortcut: unofficial endpoint, lower quality.
-        const parts = [];
-        for (const piece of chunk(text)) {
-          const r = await fetch(`https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=km&q=${encodeURIComponent(piece)}`,
-            { headers: { 'User-Agent': 'Mozilla/5.0' } });
-          if (!r.ok) return json({ error: `Voice service error ${r.status}` }, 502);
-          parts.push(await r.arrayBuffer());
-        }
-        return audio(new Blob(parts));
+        try { return audio(await googleTTS(text, 'km')); } // backup when Microsoft's voice fails
+        catch (e) { return json({ error: e.message }, 502); }
       }
       const ssml = `<speak version="1.0" xml:lang="km-KH"><voice name="km-KH-SreymomNeural"><prosody rate="-10%">${xmlEscape(text)}</prosody></voice></speak>`;
       const r = await fetch(`https://${env.AZURE_SPEECH_REGION}.tts.speech.microsoft.com/cognitiveservices/v1`, {
