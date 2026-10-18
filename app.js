@@ -37,7 +37,7 @@ function playSeq(items) {
 // (needs an Azure key), then the browser's own Khmer voice (Microsoft Edge has Sreymom built in, free).
 const ttsCache = new Map();
 const khmerOnly = t => (t.match(/[ក-៿᧠-᧿][ក-៿᧠-᧿\s?!.,…]*/g) || []).join(' ').trim();
-let kmVoice = null, serverVoiceOff = false;
+let kmVoice = null;
 let ttsSpeed = load('ttsspeed', 0.8); // tutor voice speed (1 = normal)
 const findVoice = () => {
   kmVoice = (window.speechSynthesis?.getVoices() || []).filter(v => /^km/i.test(v.lang))
@@ -57,7 +57,7 @@ async function speak(text, full = false) {
   const km = khmerOnly(text);
   if (!km && !full) return false;
   const say = full ? text : km, key = (full ? 'full:' : '') + say;
-  if (tutor.url && !serverVoiceOff) {
+  if (tutor.url) {
     try {
       if (!ttsCache.has(key)) {
         const r = await fetch(tutor.url, { method: 'POST', headers: { 'content-type': 'application/json' },
@@ -69,7 +69,7 @@ async function speak(text, full = false) {
       a.playbackRate = ttsSpeed; // browsers keep the pitch natural when slowed
       await a.play();
       return true;
-    } catch { serverVoiceOff = true; } // no voice key on the server: stop asking it this visit
+    } catch (e) { console.warn('tutor voice failed:', e.message); } // try again next time; one hiccup shouldn't silence the page
   }
   return km ? browserSpeak(km) : false;
 }
@@ -563,7 +563,10 @@ function tutorPage() {
   const log = $('log'), input = $('say');
   const render = () => {
     log.innerHTML = chatLog.map(bubble).join('');
-    log.querySelectorAll('[data-say]').forEach(b => b.onclick = () => speak(chatLog[+b.dataset.say].content, true));
+    log.querySelectorAll('[data-say]').forEach(b => b.onclick = async () => {
+      b.textContent = '…';
+      b.textContent = (await speak(chatLog[+b.dataset.say].content, true)) ? '🔊' : '⚠ retry';
+    });
     $('chips').style.display = chatLog.length ? 'none' : '';
     log.lastElementChild?.scrollIntoView({ block: 'end' });
   };
