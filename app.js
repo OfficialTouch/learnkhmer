@@ -1,3 +1,11 @@
+// Browsers can keep an old index.html; if the live one points to a newer app.js, reload once.
+const APP_V = document.currentScript?.src.match(/v=(\d+)/)?.[1];
+fetch('index.html', { cache: 'no-store' }).then(r => r.text()).then(t => {
+  const live = t.match(/app\.js\?v=(\d+)/)?.[1];
+  if (live && APP_V && live !== APP_V && !sessionStorage.getItem('km-reloaded-' + live)) {
+    sessionStorage.setItem('km-reloaded-' + live, 1); location.reload();
+  }
+}).catch(() => {});
 const main = document.getElementById('main');
 const LESSONS = DATA.lessons, UNITS = DATA.units;
 const BY_ID = {};
@@ -5,7 +13,7 @@ const register = list => list.forEach(x => { if (typeof x === 'object') BY_ID[x.
 register(LESSONS.flatMap(l => l.items));
 [DATA.consonants, DATA.vowels, DATA.subjects, DATA.markers, DATA.verbs].forEach(register);
 UNITS.forEach(u => { register(u.vocab); register(u.examples); });
-DATA.grandma.forEach(t => register(t.items));
+[...DATA.grandma, ...DATA.casual].forEach(t => register(t.items));
 const get = x => typeof x === 'string' ? BY_ID[x] : x;
 
 const DAY = 864e5, GAPS = [0, 1, 3, 7, 14, 30, 90]; // review gap in days per box
@@ -110,6 +118,7 @@ function home() {
     ['alphabet', 'Alphabet', 'All 33 consonants and common vowels, each with audio.'],
     ['practice/cards', 'Flashcards & practice', 'Flip through any word set, plus smart review, a listening quiz and matching games.'],
     ['tools', 'Tools', 'Translator, Khmer keyboard and printable handwriting sheets.'],
+    ['casual', 'Casual Talk', 'What people really say: slang, reactions and everyday lines.'],
     ['grandma', 'Learn with Grandma', 'Phrases to ask Grandma so she can teach you, plus a printable sheet.'],
     ['culture', 'Culture notes', 'Greetings, respect, family words and holidays.'],
   ];
@@ -155,16 +164,16 @@ function unit(i, step = 'learn') {
     wirePlay(box); wireCards(box);
     $('topractice').onclick = () => unit(i, 'practice');
   } else if (step === 'practice') {
-    let right = 0, total = 0;
+    let right = 0, total = 0; const used = new Set();
     const next = () => {
       box.innerHTML = `<p class="hint">Score: ${right}/${total}. Keep going until it feels easy, then take the test.</p><div id="q"></div>
         <div class="row"><button class="btn sm" id="totest">I'm ready for the test →</button></div>`;
       $('totest').onclick = () => unit(i, 'test');
-      question(makeQ(u), $('q'), ok => { total++; if (ok) right++; next(); });
+      question(makeQ(u, used), $('q'), ok => { total++; if (ok) right++; next(); });
     };
     next();
   } else {
-    const qs = Array.from({ length: 10 }, () => makeQ(u));
+    const used = new Set(), qs = Array.from({ length: 10 }, () => makeQ(u, used));
     let n = 0, right = 0;
     const next = () => {
       if (n === qs.length) {
@@ -187,21 +196,25 @@ function unit(i, step = 'learn') {
 }
 
 // One random exercise from a unit: listening, meaning, sentence building or grammar.
-function makeQ(u) {
+function makeQ(u, used = new Set()) {
+  // Prefer words/questions not asked yet in this test or practice session.
+  const fresh = arr => { const f = arr.filter(x => !used.has(x.id ?? x.q)); const x = pick(f.length ? f : arr); used.add(x.id ?? x.q); return x; };
   const items = unitItems(u).filter(it => it.en);
   const others = UNITS.flatMap(unitItems).filter(it => it.en);
   const distract = (it, key) => shuffle([...new Set(shuffle(items.concat(others)).filter(x => x[key] !== it[key]).map(x => x[key]))].slice(0, 3));
   const sentences = u.examples.map(get).filter(it => it.rom.split(' ').length > 1);
-  const type = pick(['listen', 'listen', 'meaning', 'build', 'grammar']);
+  const left = arr => arr.some(x => !used.has(x.id ?? x.q));
+  const extra = [...(left(sentences) ? ['build'] : []), ...(left(u.quiz) ? ['grammar'] : [])];
+  const type = pick(left(items) || !extra.length ? ['listen', 'listen', 'meaning', ...extra] : extra);
   if (type === 'grammar') {
-    const g = pick(u.quiz);
+    const g = fresh(u.quiz);
     return { kind: 'mc', prompt: `<b>${g.q}</b>`, opts: g.opts, a: g.opts[g.a], why: g.why };
   }
-  if (type === 'build' && sentences.length) {
-    const it = pick(sentences);
+  if (type === 'build') {
+    const it = fresh(sentences);
     return { kind: 'build', it, prompt: `Build this sentence: <b>${it.en}</b>` };
   }
-  const it = pick(items);
+  const it = fresh(items);
   if (type === 'meaning') return { kind: 'mc', it, prompt: `How do you say <b>${it.en}</b>?`, opts: shuffle([it.rom, ...distract(it, 'rom')]), a: it.rom };
   return { kind: 'mc', it, listen: true, prompt: 'Listen. What does it mean?', opts: shuffle([it.en, ...distract(it, 'en')]), a: it.en };
 }
@@ -393,6 +406,7 @@ const DECKS = [
   ...UNITS.map((u, i) => [`u${i}`, `Unit ${i + 1}: ${u.title}`, () => unitItems(u)]),
   ...LESSONS.map((l, i) => [`p${i}`, `Phrases Day ${i + 1}: ${l.title}`, () => l.items]),
   ...DATA.grandma.map((t, i) => [`g${i}`, `Grandma: ${t.title}`, () => t.items.map(get)]),
+  ...DATA.casual.map((t, i) => [`c${i}`, `Casual: ${t.title}`, () => t.items.map(get)]),
   ['verbs', 'Verbs', () => DATA.verbs],
   ['letters', 'Alphabet: consonants', () => DATA.consonants],
   ['vowels', 'Alphabet: vowels', () => DATA.vowels],
@@ -733,9 +747,17 @@ function grandma() {
       She's the real teacher: when she says a word differently from the app, trust her and add it to your notes.</p>
     <a class="btn primary" href="grandma-phrases.docx" download>🖨 Download printable Word sheet</a>
     <p class="hint">The sheet has a blank "Grandma says" column for her corrections.</p>` +
-    DATA.grandma.map(t => `<h3 class="level">${t.title}</h3><p class="hint" style="margin-top:-4px">${t.intro}</p>
-      <div class="card">${t.items.map(get).map(it => itemRow(it) + (it.note ? `<p class="note" style="margin:-6px 0 8px 52px">${it.note}</p>` : '')).join('')}</div>`).join('') +
-    '</div>';
+    topicCards(DATA.grandma) + '</div>';
+  wirePlay(); wireCards();
+}
+const topicCards = list => list.map(t => `<h3 class="level">${t.title}</h3><p class="hint" style="margin-top:-4px">${t.intro}</p>
+  <div class="card">${t.items.map(get).map(it => itemRow(it) + (it.note ? `<p class="note" style="margin:-6px 0 8px 52px">${it.note}</p>` : '')).join('')}</div>`).join('');
+
+// ---- Casual talk: what people actually say, not the textbook version ----
+function casual() {
+  view.innerHTML = `<div class="narrow"><h2>Casual Talk</h2>
+    <p class="hint">Textbook Khmer can sound stiff. These are the everyday words friends and family really use.</p>` +
+    topicCards(DATA.casual) + '</div>';
   wirePlay(); wireCards();
 }
 
@@ -746,7 +768,7 @@ function culture() {
 }
 
 // ---- Router: #page or #page/arg ----
-const VIEWS = { home, course, phrases, lessons: phrases, alphabet, verbs, practice, grandma, tutor: tutorPage, tools, culture };
+const VIEWS = { home, course, phrases, lessons: phrases, alphabet, verbs, practice, grandma, casual, tutor: tutorPage, tools, culture };
 function route() {
   const [name, a, b] = location.hash.slice(1).split('/');
   onTutorPage = name === 'tutor';

@@ -2846,5 +2846,164 @@ window.DATA = {
     }
    ]
   }
+ ],
+ "casual": [
+  {
+   "title": "How friends greet",
+   "intro": "Friends rarely say សុខសប្បាយទេ? to each other. This is what you'll actually hear.",
+   "items": [
+    "eaten-yet",
+    "where-going",
+    {
+     "id": "cs-how-going",
+     "km": "ម៉េចហើយ?",
+     "rom": "mech haey?",
+     "en": "How's it going?",
+     "note": "The everyday \"how are you\" between friends and family."
+    },
+    {
+     "id": "cs-same-old",
+     "km": "ធម្មតា",
+     "rom": "thoammeda",
+     "en": "Same as usual / not bad",
+     "note": "The easy answer to \"how's it going?\""
+    },
+    {
+     "id": "cs-and-you",
+     "km": "ចុះឯង?",
+     "rom": "chos aeng?",
+     "en": "And you?",
+     "note": "ឯង is casual \"you\": fine with friends and younger people, not with elders."
+    },
+    {
+     "id": "cs-see-you",
+     "km": "ជួបគ្នាពេលក្រោយ",
+     "rom": "chuop knea pel kraoy",
+     "en": "See you later"
+    },
+    {
+     "id": "cs-heading-out",
+     "km": "ទៅសិនហើយ",
+     "rom": "tov sen haey",
+     "en": "I'm heading out",
+     "note": "More relaxed than លាហើយ (goodbye)."
+    }
+   ]
+  },
+  {
+   "title": "Reactions",
+   "intro": "Short words that make you sound natural while someone else is talking.",
+   "items": [
+    {
+     "id": "cs-so-cool",
+     "km": "ឡូយមែនទែន",
+     "rom": "loy men ten",
+     "en": "Really cool!",
+     "note": "We don't translate \"cool\" word for word. ឡូយ is the slang for cool or stylish."
+    },
+    {
+     "id": "cs-is-that-so",
+     "km": "អញ្ចឹងឬ?",
+     "rom": "anhcheung reu?",
+     "en": "Oh really? / Is that so?"
+    },
+    {
+     "id": "cs-exactly",
+     "km": "ហ្នឹងហើយ",
+     "rom": "nheung haey",
+     "en": "Exactly! / That's it!"
+    },
+    {
+     "id": "cs-for-real",
+     "km": "ពិតមែនអត់?",
+     "rom": "pit men ot?",
+     "en": "For real?"
+    },
+    {
+     "id": "cs-so-cute",
+     "km": "គួរឲ្យស្រឡាញ់ណាស់",
+     "rom": "kuor aoy srolanh nas",
+     "en": "So cute!",
+     "note": "Literally \"makes you want to love it\"."
+    },
+    {
+     "id": "cs-just-kidding",
+     "km": "និយាយលេងទេ",
+     "rom": "niyeay leng te",
+     "en": "Just kidding",
+     "note": "Literally \"just talking for fun\"."
+    },
+    {
+     "id": "cs-unbelievable",
+     "km": "ហួសចិត្ត",
+     "rom": "huos chet",
+     "en": "Unbelievable! / I can't even",
+     "note": "For when something is too much."
+    }
+   ]
+  },
+  {
+   "title": "How I feel",
+   "intro": "Between friends, skip ខ្ញុំ (I) when it's obvious and just say the feeling.",
+   "items": [
+    "hungry",
+    "full",
+    "tired",
+    {
+     "id": "cs-sleepy",
+     "km": "ងងុយគេងណាស់",
+     "rom": "ngnguy keng nas",
+     "en": "So sleepy"
+    },
+    {
+     "id": "cs-worn-out",
+     "km": "អស់កម្លាំង",
+     "rom": "os kamlang",
+     "en": "Worn out",
+     "note": "Literally \"out of strength\"."
+    },
+    {
+     "id": "cs-bored",
+     "km": "ធុញណាស់",
+     "rom": "thunh nas",
+     "en": "So bored"
+    },
+    {
+     "id": "cs-dunno",
+     "km": "អត់ដឹងទេ",
+     "rom": "ot doeng te",
+     "en": "Dunno",
+     "note": "Casual for ខ្ញុំមិនដឹងទេ. អត់ is the everyday \"not\"."
+    }
+   ]
+  },
+  {
+   "title": "Getting things moving",
+   "intro": "Quick lines for everyday plans.",
+   "items": [
+    "g10-4",
+    "wait",
+    "no-problem",
+    {
+     "id": "cs-hurry",
+     "km": "ឆាប់ៗឡើង",
+     "rom": "chhap chhap laeng",
+     "en": "Hurry up!"
+    },
+    {
+     "id": "cs-ok",
+     "km": "អូខេ",
+     "rom": "o-khe",
+     "en": "OK",
+     "note": "Yes, people say \"OK\" in Khmer too."
+    },
+    {
+     "id": "cs-enough",
+     "km": "ល្មមហើយ",
+     "rom": "lmoam haey",
+     "en": "That's enough"
+    }
+   ]
+  }
  ]
 };
