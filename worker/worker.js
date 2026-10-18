@@ -215,6 +215,57 @@ async function edgeTTS(text, voice = 'km-KH-SreymomNeural', rate = '-20%') {
   return new Blob(chunks);
 }
 
+// ---- Accounts (saved progress) and the daily cap; both live in the KV namespace bound as "KV" ----
+const DAILY_CAP = 50; // AI tutor + translator messages per day, for everyone together
+const enc = new TextEncoder();
+const hexLow = buf => [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('');
+async function hashPass(pass, salt) {
+  const key = await crypto.subtle.importKey('raw', enc.encode(pass), 'PBKDF2', false, ['deriveBits']);
+  return hexLow(await crypto.subtle.deriveBits({ name: 'PBKDF2', hash: 'SHA-256', salt: enc.encode(salt), iterations: 10000 }, key, 256));
+}
+async function sign(name, env) { // token = name.signature, so we don't need to store sessions
+  const key = await crypto.subtle.importKey('raw', enc.encode('acct:' + env.PASSWORD), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+  return name + '.' + hexLow(await crypto.subtle.sign('HMAC', key, enc.encode(name)));
+}
+async function account(b, env) {
+  if (!env.KV || !env.PASSWORD) return [{ error: 'Accounts are not set up on the server yet' }, 503];
+  if (b.action === 'signup' || b.action === 'login') {
+    const name = String(b.name || '').trim().toLowerCase(), pass = String(b.pass || '');
+    if (!/^[a-z0-9_.-]{3,30}$/.test(name)) return [{ error: 'Username: 3-30 letters, numbers, . _ or -' }, 400];
+    if (pass.length < 6) return [{ error: 'Password must be at least 6 characters' }, 400];
+    const user = await env.KV.get('user:' + name, 'json');
+    if (b.action === 'signup') {
+      if (user) return [{ error: 'That username is taken' }, 409];
+      const salt = crypto.randomUUID();
+      await env.KV.put('user:' + name, JSON.stringify({ salt, hash: await hashPass(pass, salt), data: null }));
+      return [{ token: await sign(name, env), data: null }];
+    }
+    if (!user || user.hash !== await hashPass(pass, user.salt)) return [{ error: 'Wrong username or password' }, 401];
+    return [{ token: await sign(name, env), data: user.data }];
+  }
+  const name = String(b.token || '').split('.')[0];
+  if (!name || b.token !== await sign(name, env)) return [{ error: 'Please sign in again' }, 401];
+  const user = await env.KV.get('user:' + name, 'json');
+  if (!user) return [{ error: 'Account not found' }, 404];
+  if (b.action === 'get') return [{ data: user.data }];
+  if (b.action === 'put') {
+    const data = JSON.stringify(b.data ?? null);
+    if (data.length > 200000) return [{ error: 'Too much data' }, 413];
+    user.data = JSON.parse(data);
+    await env.KV.put('user:' + name, JSON.stringify(user));
+    return [{ ok: true }];
+  }
+  return [{ error: 'Unknown action' }, 400];
+}
+async function overCap(env) {
+  if (!env.KV) return false; // shortcut: no cap until the KV namespace is bound
+  const key = 'count:' + new Date().toISOString().slice(0, 10);
+  const n = +(await env.KV.get(key) || 0);
+  if (n >= DAILY_CAP) return true;
+  await env.KV.put(key, String(n + 1), { expirationTtl: 172800 });
+  return false;
+}
+
 export default {
   async fetch(req, env) {
     const cors = {
@@ -228,6 +279,7 @@ export default {
 
     let body;
     try { body = await req.json(); } catch { return json({ error: 'Bad request' }, 400); }
+    if (body.mode === 'account') return json(...await account(body, env));
     if (!env.PASSWORD || body.password !== env.PASSWORD) return json({ error: 'Wrong password' }, 401);
 
     if (body.mode === 'tts') {
@@ -288,6 +340,7 @@ export default {
     while (messages.length && messages[0].role !== 'user') messages.shift(); // the API needs a user turn first
     if (!messages.length) return json({ error: 'No message' }, 400);
 
+    if (await overCap(env)) return json({ error: `The tutor's daily limit (${DAILY_CAP} messages) is used up. Try again tomorrow.` }, 429);
     const r = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: { 'x-api-key': env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },

@@ -21,13 +21,72 @@ let srs = load('srs', {});         // id -> {box, due}
 let done = load('done', []);       // finished phrase-lesson indexes
 let passed = load('units', {});    // unit index -> best test score
 let voice = load('voice', 'f');
-const TUTOR_URL = 'https://khmer-tutor.abtouch01.workers.dev'; // public address; the password is what protects it
+const TUTOR_URL = 'https://khmer-tutor.abtouch01.workers.dev'; // main server: tutor (password-protected) and accounts
 let tutor = load('tutor', { url: '', pass: '' });
 if (!tutor.url) tutor.url = TUTOR_URL;
 let view = main;                   // where the current page renders (sub-tabs swap it)
 
 function load(k, d) { try { return JSON.parse(localStorage.getItem('km-' + k)) ?? d; } catch { return d; } }
-function save(k, v) { try { localStorage.setItem('km-' + k, JSON.stringify(v)); } catch {} }
+function save(k, v) { try { localStorage.setItem('km-' + k, JSON.stringify(v)); } catch {} if (k !== 'account') queuePush(); }
+
+// ---- Accounts: progress (everything saved under km-) is copied to the server so it follows you to any device ----
+let acct = load('account', null); // { name, token }
+const accountApi = async body => {
+  const r = await fetch(TUTOR_URL, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ mode: 'account', ...body }), keepalive: true });
+  const j = await r.json().catch(() => ({ error: 'Bad response from server' }));
+  if (!r.ok || j.error) throw new Error(j.error || r.statusText);
+  return j;
+};
+function snapshot() {
+  const d = {};
+  for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (k.startsWith('km-') && k !== 'km-account') d[k] = localStorage.getItem(k); }
+  return d;
+}
+function applyServer(data) { // replace local progress with the account's, then restart the app on it
+  if (!data || JSON.stringify(data) === JSON.stringify(snapshot())) return false;
+  Object.keys(snapshot()).forEach(k => localStorage.removeItem(k));
+  Object.entries(data).forEach(([k, v]) => localStorage.setItem(k, v));
+  location.reload();
+  return true;
+}
+let pushTimer = null;
+function queuePush() { if (acct) { clearTimeout(pushTimer); pushTimer = setTimeout(pushNow, 4000); } }
+function pushNow() {
+  if (!acct || !pushTimer) return;
+  clearTimeout(pushTimer); pushTimer = null;
+  accountApi({ action: 'put', token: acct.token, data: snapshot() }).catch(e => console.warn('progress not saved:', e.message));
+}
+addEventListener('visibilitychange', () => { if (document.hidden) pushNow(); });
+if (acct) accountApi({ action: 'get', token: acct.token }).then(j => j.data ? applyServer(j.data) : (pushTimer = 1, pushNow()))
+  .catch(e => { if (/sign in/i.test(e.message)) { acct = null; save('account', null); } });
+
+function account() {
+  const tag = $('acct');
+  if (acct) {
+    view.innerHTML = `<div class="narrow"><div class="card"><h2 style="margin-top:0">Your account</h2>
+      <p>Signed in as <b>${esc(acct.name)}</b>. Your course, flashcards and chat save automatically, so you can pick up on any device.</p>
+      <div class="row"><button class="btn" id="signout">Sign out</button></div></div></div>`;
+    $('signout').onclick = () => { pushNow(); acct = null; save('account', null); tag.textContent = '👤 Sign in'; account(); };
+    return;
+  }
+  view.innerHTML = `<div class="narrow"><div class="card"><h2 style="margin-top:0">Sign in</h2>
+    <p class="hint">Make a free account so your progress follows you to your phone, tablet or computer.</p>
+    <label style="display:block">Username<input id="aname" autocomplete="username" autocapitalize="none"></label>
+    <label style="display:block;margin-top:10px">Password<input id="apass" type="password" autocomplete="current-password"></label>
+    <div class="row"><button class="btn primary" id="alogin">Sign in</button><button class="btn" id="asignup">Create account</button></div>
+    <p class="hint" id="amsg" role="status"></p></div></div>`;
+  const go = action => async () => {
+    $('amsg').textContent = '…';
+    try {
+      const j = await accountApi({ action, name: $('aname').value, pass: $('apass').value });
+      acct = { name: $('aname').value.trim().toLowerCase(), token: j.token }; save('account', acct);
+      tag.textContent = '👤 ' + acct.name;
+      if (!applyServer(j.data)) { pushTimer = 1; pushNow(); account(); } // new account: upload what's on this device
+    } catch (e) { $('amsg').textContent = e.message; }
+  };
+  $('alogin').onclick = go('login');
+  $('asignup').onclick = go('signup');
+}
 const shuffle = a => a.map(x => [Math.random(), x]).sort((p, q) => p[0] - q[0]).map(p => p[1]);
 const pick = a => a[Math.floor(Math.random() * a.length)];
 const $ = id => document.getElementById(id);
@@ -64,6 +123,7 @@ function browserSpeak(km) {
   return true;
 }
 // full = read the whole message (English voice + Khmer voice); otherwise only the Khmer script.
+let nowPlaying = null;
 async function speak(text, full = false) {
   const km = khmerOnly(text);
   if (!km && !full) return false;
@@ -76,9 +136,11 @@ async function speak(text, full = false) {
         if (!r.ok) throw new Error(r.status);
         ttsCache.set(key, URL.createObjectURL(await r.blob()));
       }
-      const a = new Audio(ttsCache.get(key));
+      nowPlaying?.pause(); // one voice at a time: a new one stops the old one
+      const a = nowPlaying = new Audio(ttsCache.get(key));
       a.playbackRate = ttsSpeed; // browsers keep the pitch natural when slowed
       await a.play();
+      await new Promise(done => { a.onended = a.onpause = done; }); // resolve when it finishes, so buttons can wait
       return true;
     } catch (e) { console.warn('tutor voice failed:', e.message); } // try again next time; one hiccup shouldn't silence the page
   }
@@ -581,9 +643,11 @@ let autoSpeak = load('autospeak', true);
 function tutorSettings(box, after) {
   box.innerHTML = `<div class="card"><div class="row" style="margin-top:0;justify-content:space-between"><h3 style="margin:0">Sign in to the tutor</h3>
     ${box === panel ? '<button class="btn sm" id="tclose2" aria-label="Close">✕</button>' : ''}</div>
-    <p class="hint">Enter your tutor password. It's saved on this device so you only do this once.</p>
-    <label style="display:block">Password<input id="tpass" type="password" autocomplete="current-password" value="${esc(tutor.pass)}"></label>
-    <details style="margin-top:10px"><summary class="hint">Server address</summary><input id="turl" value="${esc(tutor.url)}"></details>
+    <p class="hint">Enter the tutor password. It's saved on this device (and in your account, if you're signed in).</p>
+    <label style="display:block">Tutor password<input id="tpass" type="password" autocomplete="off" value="${esc(tutor.pass)}"></label>
+    <details style="margin-top:10px" ${tutor.url !== TUTOR_URL ? 'open' : ''}><summary class="hint">Use your own tutor server</summary>
+      <p class="hint">Set up your own free server with the steps in the project README, then paste its address. Leave blank to use the main tutor.</p>
+      <input id="turl" placeholder="https://your-server.workers.dev" value="${tutor.url !== TUTOR_URL ? esc(tutor.url) : ''}"></details>
     <div class="row"><button class="btn primary" id="tsave">Save</button></div></div>`;
   box.querySelector('#tclose2')?.addEventListener('click', closeTutor);
   box.querySelector('#tsave').onclick = () => {
@@ -611,6 +675,29 @@ function closeTutor() { panel.hidden = true; panel.innerHTML = ''; fab.hidden = 
 fab.onclick = openTutor;
 const tutorPage = () => { closeTutor(); tutorView(main); };
 
+// Highlight part of a tutor reply to hear just that part.
+const sayBtn = Object.assign(document.createElement('button'), { className: 'btn sm primary', textContent: '🔊 Say this' });
+sayBtn.style.cssText = 'position:fixed;z-index:30;display:none;box-shadow:0 4px 14px rgba(0,0,0,.25)';
+document.body.append(sayBtn);
+let sayText = '';
+document.addEventListener('selectionchange', () => {
+  const sel = getSelection(), text = sel.toString().replace(/🔊…?|⚠ retry/g, '').trim();
+  const node = sel.rangeCount ? sel.getRangeAt(0).commonAncestorContainer : null;
+  const el = node && (node.nodeType === 1 ? node : node.parentElement);
+  if (!text || !el?.closest('.msg.ai')) { if (!sayBtn.disabled) sayBtn.style.display = 'none'; return; }
+  sayText = text;
+  const r = sel.getRangeAt(0).getBoundingClientRect();
+  Object.assign(sayBtn.style, { display: '', left: Math.max(8, Math.min(innerWidth - 130, r.left)) + 'px', top: Math.min(innerHeight - 56, r.bottom + 12) + 'px' });
+});
+addEventListener('scroll', () => { if (!sayBtn.disabled) sayBtn.style.display = 'none'; }, true);
+sayBtn.onpointerdown = e => e.preventDefault(); // keep the highlight when tapping the button
+sayBtn.onclick = async () => {
+  if (sayBtn.disabled) return;
+  sayBtn.disabled = true; sayBtn.textContent = '🔊…';
+  await speak(sayText, true);
+  sayBtn.disabled = false; sayBtn.textContent = '🔊 Say this'; sayBtn.style.display = 'none';
+};
+
 function tutorView(root) {
   if (!tutor.pass) return tutorSettings(root, () => tutorView(root));
   const inBox = root === panel;
@@ -635,8 +722,10 @@ function tutorView(root) {
   const render = () => {
     log.innerHTML = chatLog.map(bubble).join('');
     log.querySelectorAll('[data-say]').forEach(b => b.onclick = async () => {
-      b.textContent = '…';
-      b.textContent = (await speak(chatLog[+b.dataset.say].content, true)) ? '🔊' : '⚠ retry';
+      if (b.disabled || (nowPlaying && !nowPlaying.paused && !nowPlaying.ended)) return; // already speaking: ignore extra taps
+      b.disabled = true; b.textContent = '🔊…';
+      const ok = await speak(chatLog[+b.dataset.say].content, true);
+      b.textContent = ok ? '🔊' : '⚠ retry'; b.disabled = false;
     });
     q('#chips').style.display = chatLog.length ? 'none' : '';
     log.lastElementChild?.scrollIntoView({ block: 'end' });
@@ -772,7 +861,7 @@ function culture() {
 }
 
 // ---- Router: #page or #page/arg ----
-const VIEWS = { home, course, phrases, lessons: phrases, alphabet, verbs, practice, grandma, casual, tutor: tutorPage, tools, culture };
+const VIEWS = { account, home, course, phrases, lessons: phrases, alphabet, verbs, practice, grandma, casual, tutor: tutorPage, tools, culture };
 function route() {
   const [name, a, b] = location.hash.slice(1).split('/');
   onTutorPage = name === 'tutor';
@@ -786,6 +875,7 @@ function route() {
   scrollTo(0, 0);
 }
 addEventListener('hashchange', route);
+$('acct').textContent = acct ? '👤 ' + acct.name : '👤 Sign in';
 const vsel = $('voice');
 vsel.value = voice;
 vsel.onchange = () => { voice = vsel.value; save('voice', voice); };
