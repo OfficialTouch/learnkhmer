@@ -565,8 +565,8 @@ function tutorSettings(box, after) {
     <label>Server address<input id="turl" placeholder="https://khmer-tutor.yourname.workers.dev" value="${esc(tutor.url)}"></label>
     <label style="display:block;margin-top:10px">Password<input id="tpass" type="password" value="${esc(tutor.pass)}"></label>
     <div class="row"><button class="btn primary" id="tsave">Save</button></div></div>`;
-  $('tsave').onclick = () => {
-    tutor = { url: $('turl').value.trim(), pass: $('tpass').value };
+  box.querySelector('#tsave').onclick = () => {
+    tutor = { url: box.querySelector('#turl').value.trim(), pass: box.querySelector('#tpass').value };
     save('tutor', tutor); after();
   };
 }
@@ -576,75 +576,89 @@ function bubble(m, i) {
   return `<div class="msg ${m.role === 'user' ? 'me' : 'ai'}">${html}${m.role === 'assistant' ? ` <button class="btn sm" data-say="${i}" aria-label="Speak">🔊</button>` : ''}</div>`;
 }
 
-// The tutor lives in a slide-out panel over any page, so a lesson or test in progress is never lost.
+// The tutor: a small help-style chat box in the corner of every page (collapses to a bubble),
+// plus a full AI Tutor page. Both show the same conversation.
 const panel = $('chatpanel'), fab = $('chatfab');
+let onTutorPage = false;
 function openTutor() {
+  if (onTutorPage) return;
   panel.hidden = false; fab.hidden = true;
-  if (!panel.dataset.ready) { panel.dataset.ready = 1; tutorPage(); }
-  $('say')?.focus();
+  tutorView(panel);
+  panel.querySelector('#say')?.focus();
 }
-function closeTutor() { panel.hidden = true; fab.hidden = false; }
+function closeTutor() { panel.hidden = true; panel.innerHTML = ''; fab.hidden = onTutorPage; }
 fab.onclick = openTutor;
+const tutorPage = () => { closeTutor(); tutorView(main); };
 
-function tutorPage() {
-  if (!tutor.url) return tutorSettings(panel, tutorPage);
+function tutorView(root) {
+  if (!tutor.url) return tutorSettings(root, () => tutorView(root));
+  const inBox = root === panel;
+  const q = sel => root.querySelector(sel); // look up inside this view only
   const chips = ['How do I say "I love you, Mom"?', "Let's practice greeting my partner's parents", 'Quiz me on numbers', 'Teach me how to order food'];
-  panel.innerHTML = `<div><div class="row" style="margin-top:0;justify-content:space-between">
-      <h2 style="margin:0">AI Tutor</h2><button class="btn sm" id="tclose" aria-label="Close tutor">✕</button></div>
-    <div class="row" style="margin-top:4px">
-      <span><label class="hint"><input type="checkbox" id="auto" ${autoSpeak ? 'checked' : ''} style="width:auto"> Speak replies</label>
-      <select id="speed" aria-label="Voice speed">${[[0.6, 'Slowest'], [0.8, 'Slow'], [1, 'Normal']].map(([v, l]) => `<option value="${v}" ${v === ttsSpeed ? 'selected' : ''}>${l}</option>`).join('')}</select>
-      <button class="btn sm" id="clear">New chat</button> <button class="btn sm" id="gear" aria-label="Settings">⚙</button></span></div>
-    <p class="hint">Ask anything in English or Khmer, any time. Your place in the lesson stays put while you chat. Replies are read out loud.</p>
-    <div class="chat" id="log"></div>
-    <div class="tabs" id="chips">${chips.map(c => `<button class="btn sm">${esc(c)}</button>`).join('')}</div>
-    <div class="composer"><textarea id="say" placeholder="Type or tap 🎤 to talk…"></textarea>
+  root.innerHTML = `<div class="tut ${inBox ? 'box' : 'narrow'}">
+    <div class="tut-head"><div class="row" style="margin-top:0;justify-content:space-between">
+      <b style="font-size:${inBox ? 17 : 24}px">AI Tutor</b>
+      <span>${inBox ? '<a class="btn sm" href="#tutor" title="Open full page">⤢</a> <button class="btn sm" id="tclose" aria-label="Collapse">–</button>' : ''}</span></div>
+      <div class="row" style="margin-top:6px">
+        <label class="hint"><input type="checkbox" id="auto" ${autoSpeak ? 'checked' : ''} style="width:auto"> Speak</label>
+        <select id="speed" aria-label="Voice speed">${[[0.6, 'Slowest'], [0.8, 'Slow'], [1, 'Normal']].map(([v, l]) => `<option value="${v}" ${v === ttsSpeed ? 'selected' : ''}>${l}</option>`).join('')}</select>
+        <button class="btn sm" id="clear">New chat</button><button class="btn sm" id="gear" aria-label="Settings">⚙</button></div></div>
+    <div class="tut-body">
+      <p class="hint">Ask anything in English or Khmer${inBox ? '. Your lesson stays where it is.' : ', any time. Replies are read out loud.'}</p>
+      <div class="chat" id="log"></div>
+      <div class="tabs" id="chips">${chips.map(c => `<button class="btn sm">${esc(c)}</button>`).join('')}</div></div>
+    <div class="composer"><textarea id="say" placeholder="Type or tap 🎤…"></textarea>
       <button class="btn" id="mic" aria-label="Talk">🎤</button><select id="micl" aria-label="Mic language"><option value="en-US">EN</option><option value="km-KH">ខ្មែរ</option></select>
       <button class="btn primary" id="send">Send</button></div></div>`;
-  const log = $('log'), input = $('say');
+  const log = q('#log'), input = q('#say');
   const render = () => {
     log.innerHTML = chatLog.map(bubble).join('');
     log.querySelectorAll('[data-say]').forEach(b => b.onclick = async () => {
       b.textContent = '…';
       b.textContent = (await speak(chatLog[+b.dataset.say].content, true)) ? '🔊' : '⚠ retry';
     });
-    $('chips').style.display = chatLog.length ? 'none' : '';
+    q('#chips').style.display = chatLog.length ? 'none' : '';
     log.lastElementChild?.scrollIntoView({ block: 'end' });
   };
+  let busy = false;
   const send = async text => {
     text = text.trim();
-    if (!text) return;
+    if (!text || busy) return; // one question at a time
+    busy = true;
     chatLog.push({ role: 'user', content: text });
     input.value = ''; render();
-    log.insertAdjacentHTML('beforeend', '<div class="msg ai hint" id="typing">…</div>');
+    log.insertAdjacentHTML('beforeend', '<div class="msg ai hint typing">Thinking…</div>');
+    log.lastElementChild.scrollIntoView({ block: 'end' });
     try {
-      const reply = await ask('chat', chatLog.slice(-20));
+      const reply = (await ask('chat', chatLog.slice(-20))).trim() || "(The tutor sent an empty reply. Please ask again.)";
       chatLog.push({ role: 'assistant', content: reply });
       save('chat', chatLog.slice(-40));
-      render();
+      if (root.isConnected) render();
       if (autoSpeak) speak(reply, true);
     } catch (e) {
-      $('typing')?.remove();
+      log.querySelector('.typing')?.remove();
       log.insertAdjacentHTML('beforeend', `<div class="msg ai" style="border-color:var(--bad)">Couldn't reach the tutor: ${esc(e.message)}. Check the address and password (⚙).</div>`);
+      log.lastElementChild.scrollIntoView({ block: 'end' });
     }
+    busy = false;
   };
   render();
-  $('send').onclick = () => send(input.value);
+  q('#send').onclick = () => send(input.value);
   input.onkeydown = e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(input.value); } };
-  $('chips').querySelectorAll('button').forEach(b => b.onclick = () => send(b.textContent));
-  $('auto').onchange = e => { autoSpeak = e.target.checked; save('autospeak', autoSpeak); };
-  $('speed').onchange = e => { ttsSpeed = +e.target.value; save('ttsspeed', ttsSpeed); };
-  $('clear').onclick = () => { chatLog = []; save('chat', chatLog); render(); };
-  $('gear').onclick = () => tutorSettings(panel, tutorPage);
-  $('tclose').onclick = closeTutor;
+  q('#chips').querySelectorAll('button').forEach(b => b.onclick = () => send(b.textContent));
+  q('#auto').onchange = e => { autoSpeak = e.target.checked; save('autospeak', autoSpeak); };
+  q('#speed').onchange = e => { ttsSpeed = +e.target.value; save('ttsspeed', ttsSpeed); };
+  q('#clear').onclick = () => { chatLog = []; save('chat', chatLog); render(); };
+  q('#gear').onclick = () => tutorSettings(root, () => tutorView(root));
+  if (inBox) q('#tclose').onclick = closeTutor;
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SR) { $('mic').style.display = $('micl').style.display = 'none'; return; }
-  $('mic').onclick = () => {
+  if (!SR) { q('#mic').style.display = q('#micl').style.display = 'none'; return; }
+  q('#mic').onclick = () => {
     const r = new SR();
-    r.lang = $('micl').value;
+    r.lang = q('#micl').value;
     r.onresult = e => send(e.results[0][0].transcript);
-    r.onend = () => $('mic').textContent = '🎤';
-    $('mic').textContent = '⏺';
+    r.onend = () => q('#mic').textContent = '🎤';
+    q('#mic').textContent = '⏺';
     r.start();
   };
 }
@@ -716,17 +730,11 @@ function culture() {
 }
 
 // ---- Router: #page or #page/arg ----
-const VIEWS = { home, course, phrases, lessons: phrases, alphabet, verbs, practice, tools, culture };
-let lastHash = '#home';
+const VIEWS = { home, course, phrases, lessons: phrases, alphabet, verbs, practice, tutor: tutorPage, tools, culture };
 function route() {
   const [name, a, b] = location.hash.slice(1).split('/');
-  if (name === 'tutor') { // open the tutor panel without leaving the current page
-    openTutor();
-    history.replaceState(null, '', lastHash);
-    if (main.textContent !== 'Loading…') return;
-    return route();
-  }
-  lastHash = location.hash || '#home';
+  onTutorPage = name === 'tutor';
+  if (!onTutorPage) fab.hidden = !panel.hidden;
   const v = VIEWS[name] ? name : 'home';
   document.querySelectorAll('nav a').forEach(x => x.classList.toggle('on', x.getAttribute('href') === '#' + (v === 'lessons' ? 'phrases' : v)));
   view = main;
