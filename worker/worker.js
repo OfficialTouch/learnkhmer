@@ -229,7 +229,7 @@ async function sign(name, env) { // token = name.signature, so we don't need to 
 }
 async function account(b, env) {
   if (!env.KV || !env.PASSWORD) return [{ error: 'Accounts are not set up on the server yet' }, 503];
-  if (b.action === 'signup' || b.action === 'login') {
+  if (b.action === 'signup' || b.action === 'login' || b.action === 'delete') {
     const name = String(b.name || '').trim().toLowerCase(), pass = String(b.pass || '');
     if (!/^[a-z0-9_.-]{3,30}$/.test(name)) return [{ error: 'Username: 3-30 letters, numbers, . _ or -' }, 400];
     if (pass.length < 6) return [{ error: 'Password must be at least 6 characters' }, 400];
@@ -241,6 +241,7 @@ async function account(b, env) {
       return [{ token: await sign(name, env), data: null }];
     }
     if (!user || user.hash !== await hashPass(pass, user.salt)) return [{ error: 'Wrong username or password' }, 401];
+    if (b.action === 'delete') { await env.KV.delete('user:' + name); return [{ ok: true }]; }
     return [{ token: await sign(name, env), data: user.data }];
   }
   const name = String(b.token || '').split('.')[0];
@@ -252,9 +253,20 @@ async function account(b, env) {
     const data = JSON.stringify(b.data ?? null);
     if (data.length > 200000) return [{ error: 'Too much data' }, 413];
     user.data = JSON.parse(data);
-    await env.KV.put('user:' + name, JSON.stringify(user));
+    await env.KV.put('user:' + name, JSON.stringify(user), { metadata: { updated: Date.now() } });
     return [{ ok: true }];
   }
+  return [{ error: 'Unknown action' }, 400];
+}
+// Developer tools: list and delete accounts. Uses its own secret, ADMIN_PASSWORD (not the tutor password others know).
+async function admin(b, env) {
+  if (!env.KV || !env.ADMIN_PASSWORD || b.password !== env.ADMIN_PASSWORD) return [{ error: 'Wrong admin password' }, 401];
+  if (b.action === 'list') {
+    const r = await env.KV.list({ prefix: 'user:' }); // shortcut: first 1000 accounts only, add paging past that
+    const today = 'count:' + new Date().toISOString().slice(0, 10);
+    return [{ users: r.keys.map(k => ({ name: k.name.slice(5), updated: k.metadata?.updated || null })), used: +(await env.KV.get(today) || 0), cap: DAILY_CAP }];
+  }
+  if (b.action === 'delete') { await env.KV.delete('user:' + String(b.name || '').toLowerCase()); return [{ ok: true }]; }
   return [{ error: 'Unknown action' }, 400];
 }
 async function overCap(env) {
@@ -280,6 +292,7 @@ export default {
     let body;
     try { body = await req.json(); } catch { return json({ error: 'Bad request' }, 400); }
     if (body.mode === 'account') return json(...await account(body, env));
+    if (body.mode === 'admin') return json(...await admin(body, env));
     if (!env.PASSWORD || body.password !== env.PASSWORD) return json({ error: 'Wrong password' }, 401);
 
     if (body.mode === 'tts') {

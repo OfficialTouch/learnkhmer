@@ -60,13 +60,24 @@ addEventListener('visibilitychange', () => { if (document.hidden) pushNow(); });
 if (acct) accountApi({ action: 'get', token: acct.token }).then(j => j.data ? applyServer(j.data) : (pushTimer = 1, pushNow()))
   .catch(e => { if (/sign in/i.test(e.message)) { acct = null; save('account', null); } });
 
+const hasProgress = () => ['km-srs', 'km-done', 'km-units', 'km-mycards', 'km-chat'].some(k => (localStorage.getItem(k) || '').length > 4);
 function account() {
   const tag = $('acct');
   if (acct) {
     view.innerHTML = `<div class="narrow"><div class="card"><h2 style="margin-top:0">Your account</h2>
       <p>Signed in as <b>${esc(acct.name)}</b>. Your course, flashcards and chat save automatically, so you can pick up on any device.</p>
-      <div class="row"><button class="btn" id="signout">Sign out</button></div></div></div>`;
-    $('signout').onclick = () => { pushNow(); acct = null; save('account', null); tag.textContent = '👤 Sign in'; account(); };
+      <div class="row"><button class="btn" id="signout">Sign out</button></div>
+      <details style="margin-top:14px"><summary class="hint">Delete my account</summary>
+        <p class="hint">Removes your saved progress from the server. This device keeps its copy.</p>
+        <label style="display:block">Password<input id="dpass" type="password" autocomplete="current-password"></label>
+        <div class="row"><button class="btn bad" id="ddel">Delete account</button></div><p class="hint" id="dmsg" role="status"></p></details></div></div>`;
+    const signOut = () => { clearTimeout(pushTimer); pushTimer = null; acct = null; save('account', null); tag.textContent = '👤 Sign in'; account(); };
+    $('signout').onclick = () => { pushNow(); signOut(); };
+    $('ddel').onclick = async () => {
+      $('dmsg').textContent = '…';
+      try { await accountApi({ action: 'delete', name: acct.name, pass: $('dpass').value }); signOut(); }
+      catch (e) { $('dmsg').textContent = e.message; }
+    };
     return;
   }
   view.innerHTML = `<div class="narrow"><div class="card"><h2 style="margin-top:0">Sign in</h2>
@@ -81,7 +92,16 @@ function account() {
       const j = await accountApi({ action, name: $('aname').value, pass: $('apass').value });
       acct = { name: $('aname').value.trim().toLowerCase(), token: j.token }; save('account', acct);
       tag.textContent = '👤 ' + acct.name;
-      if (!applyServer(j.data)) { pushTimer = 1; pushNow(); account(); } // new account: upload what's on this device
+      const keepMine = () => { pushTimer = 1; pushNow(); account(); }; // upload what's on this device
+      if (!j.data) return keepMine();
+      if (!hasProgress() || JSON.stringify(j.data) === JSON.stringify(snapshot())) return applyServer(j.data) || account();
+      // Both this device and the account have progress: let the person choose which one wins.
+      view.innerHTML = `<div class="narrow"><div class="card"><h2 style="margin-top:0">Which progress do you want?</h2>
+        <p>This device and your account both have saved progress. The one you pick replaces the other.</p>
+        <div class="row"><button class="btn primary" id="kmine">Keep this device's progress</button>
+        <button class="btn" id="kacct">Use my account's progress</button></div></div></div>`;
+      $('kmine').onclick = keepMine;
+      $('kacct').onclick = () => applyServer(j.data);
     } catch (e) { $('amsg').textContent = e.message; }
   };
   $('alogin').onclick = go('login');
@@ -861,7 +881,30 @@ function culture() {
 }
 
 // ---- Router: #page or #page/arg ----
-const VIEWS = { account, home, course, phrases, lessons: phrases, alphabet, verbs, practice, grandma, casual, tutor: tutorPage, tools, culture };
+// Developer page (not linked anywhere): #admin. Needs the ADMIN_PASSWORD secret from the Cloudflare worker.
+function admin() {
+  view.innerHTML = `<div class="narrow"><div class="card"><h2 style="margin-top:0">Developer: accounts</h2>
+    <label style="display:block">Admin password<input id="adpass" type="password" autocomplete="off"></label>
+    <div class="row"><button class="btn primary" id="adgo">Show accounts</button></div><p class="hint" id="admsg" role="status"></p><div id="adlist"></div></div></div>`;
+  const call = body => fetch(TUTOR_URL, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ mode: 'admin', password: $('adpass').value, ...body }) })
+    .then(async r => { const j = await r.json().catch(() => ({ error: 'Bad response' })); if (!r.ok || j.error) throw new Error(j.error || r.statusText); return j; });
+  const show = async () => {
+    $('admsg').textContent = '…';
+    try {
+      const j = await call({ action: 'list' });
+      $('admsg').textContent = `${j.users.length} account(s). Tutor messages today: ${j.used} of ${j.cap}.`;
+      $('adlist').innerHTML = j.users.map(u => `<div class="item"><div style="flex:1"><b>${esc(u.name)}</b>
+        <span class="hint">${u.updated ? 'saved ' + new Date(u.updated).toLocaleString() : 'no progress saved yet'}</span></div>
+        <button class="btn sm bad" data-del="${esc(u.name)}">Delete</button></div>`).join('');
+      $('adlist').querySelectorAll('[data-del]').forEach(b => b.onclick = async () => {
+        if (b.textContent !== 'Tap again to delete') { b.textContent = 'Tap again to delete'; return; } // two taps, no popup
+        await call({ action: 'delete', name: b.dataset.del }).catch(e => alert(e.message)); show();
+      });
+    } catch (e) { $('admsg').textContent = e.message; }
+  };
+  $('adgo').onclick = show;
+}
+const VIEWS = { admin, account, home, course, phrases, lessons: phrases, alphabet, verbs, practice, grandma, casual, tutor: tutorPage, tools, culture };
 function route() {
   const [name, a, b] = location.hash.slice(1).split('/');
   onTutorPage = name === 'tutor';
